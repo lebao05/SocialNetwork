@@ -6,8 +6,14 @@ namespace DataAccess.Entities
 {
     public class AppUser : IdentityUser
     {
-        [Column(TypeName = "date")]
+        [Required, StringLength(50, MinimumLength = 2)]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required, StringLength(50, MinimumLength = 2)]
+        public string LastName { get; set; } = string.Empty;
         public DateTime? DateOfBirth { get; set; }
+        [Required]
+        public string Gender { get; set; } = string.Empty;
 
         [StringLength(500)]
         public string? ProfilePictureUrl { get; set; }

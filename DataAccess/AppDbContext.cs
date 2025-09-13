@@ -12,7 +12,7 @@ namespace DataAccess
 
         // Posts
         public DbSet<Post> Posts { get; set; }
-        public DbSet<PostMedia> PostMedia { get; set; }
+        public DbSet<PostMedia> PostMedias { get; set; }
         public DbSet<PostReaction> PostReactions { get; set; }
 
         // Comments
@@ -62,6 +62,7 @@ namespace DataAccess
             builder.ApplyConfiguration(new StoryViewConfig());
             builder.ApplyConfiguration(new UserRelationshipConfig());
             builder.ApplyConfiguration(new UserRelationshipRequestConfig());
+            builder.ApplyConfiguration(new AppUserConfiguration());
 
 
             foreach (var entityType in builder.Model.GetEntityTypes())

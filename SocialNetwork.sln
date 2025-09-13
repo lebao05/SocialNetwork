@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataAccess", "DataAccess\Da
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Api", "Api\Api.csproj", "{CED1C940-7D2B-4BA3-93BC-0428A9AF7351}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{280DC189-9193-4710-B54C-C31BE0929F0E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{93705700-E105-49F1-9307-606B28266F0E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,10 +29,10 @@ Global
 		{CED1C940-7D2B-4BA3-93BC-0428A9AF7351}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CED1C940-7D2B-4BA3-93BC-0428A9AF7351}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CED1C940-7D2B-4BA3-93BC-0428A9AF7351}.Release|Any CPU.Build.0 = Release|Any CPU
-		{280DC189-9193-4710-B54C-C31BE0929F0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{280DC189-9193-4710-B54C-C31BE0929F0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{280DC189-9193-4710-B54C-C31BE0929F0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{280DC189-9193-4710-B54C-C31BE0929F0E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93705700-E105-49F1-9307-606B28266F0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93705700-E105-49F1-9307-606B28266F0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93705700-E105-49F1-9307-606B28266F0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93705700-E105-49F1-9307-606B28266F0E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
