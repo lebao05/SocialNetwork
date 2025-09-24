@@ -2,6 +2,7 @@
 using Api.Middlewares;
 using DataAccess;
 using DataAccess.Entities;
+using DataAccess.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -127,6 +128,13 @@ builder.Services.AddSwaggerGen(c =>
 });
 builder.Services.AddAuthorization();
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var seeder = new SeedDb(db);
+    seeder.Seed();
+}
+app.UseSerilogRequestLogging();
 app.UseMiddleware<ExceptionMiddleware>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

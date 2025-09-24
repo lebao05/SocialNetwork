@@ -1,9 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Helpers;
 using System.ComponentModel.DataAnnotations;
-using Helpers;
+using System.ComponentModel.DataAnnotations.Schema;
 namespace DataAccess.Entities
 {
-    public class Comment:BaseEntity,IBaseEntity
+    public class Comment : BaseEntity, IBaseEntity
     {
 
         [Required]
@@ -12,13 +12,13 @@ namespace DataAccess.Entities
         [Required]
         public string UserId { get; set; }
 
-        public string? ParentCommentId { get; set; } 
+        public string? ParentCommentId { get ; set; }
 
         [Required]
         public string? Content { get; set; }
 
         [StringLength(500)]
-        public string? MediaUrl { get; set; } 
+        public string? MediaUrl { get; set; }
 
         public bool IsEdited { get; set; } = false;
 

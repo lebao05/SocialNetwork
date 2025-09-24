@@ -1,6 +1,5 @@
 ﻿using BusinessLogic.DTOs.User;
 using DataAccess.Entities;
-using Microsoft.AspNetCore.Identity;
 
 namespace BusinessLogic.Services.Interfaces
 {

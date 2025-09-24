@@ -10,8 +10,12 @@ import {
   Images,
   UsersRound,
 } from "lucide-react";
-
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import anonymous from "../../assets/anonymous.png";
 export function LeftSideBar() {
+  const navigate = useNavigate();
+  const user = useSelector((state) => state.auth.user);
   const menuItems = [
     { icon: Home, label: "Home", active: true, href: "/" },
     { icon: Users, label: "Friends", href: "/friends" },
@@ -29,10 +33,13 @@ export function LeftSideBar() {
     // 🔥 Only visible on large screens (lg+)
     <div className="background px-4 space-y-2 h-[calc(100vh-3.5rem)] overflow-y-auto ">
       {/* User Profile */}
-      <a className="flex cursor-pointer items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors mb-4">
+      <a
+        className="flex cursor-pointer items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors mb-4"
+        onClick={() => navigate(`/profile/${user.id}`)}
+      >
         <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
           <img
-            src="/user-profile-illustration.png"
+            src={user.avatar || anonymous}
             alt="User Avatar"
             className="h-full w-full object-cover"
             onError={(e) => {
@@ -41,7 +48,9 @@ export function LeftSideBar() {
             }}
           />
         </div>
-        <span className="font-semibold text-gray-800">John Doe</span>
+        <span className="font-semibold text-gray-800">
+          {user.firstName} {user.lastName}
+        </span>
       </a>
 
       {/* Navigation Menu */}

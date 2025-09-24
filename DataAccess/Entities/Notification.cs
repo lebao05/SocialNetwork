@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DataAccess.Entities
 {
-    public class Notification : BaseEntity,IBaseEntity
+    public class Notification : BaseEntity, IBaseEntity
     {
 
         [Required]
@@ -22,11 +22,11 @@ namespace DataAccess.Entities
 
         public bool IsRead { get; set; }
 
-        public string? RelatedUserId { get; set; }          
-        public string? RelatedPostId { get; set; }          
-        public string? RelatedCommunityGroupId { get; set; }  
+        public string? RelatedUserId { get; set; }
+        public string? RelatedPostId { get; set; }
+        public string? RelatedCommunityGroupId { get; set; }
         public string? RelatedPostingGroupPostId { get; set; }
-        public string? RelatedCommentId { get; set; }        
+        public string? RelatedCommentId { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? ReadAt { get; set; }
 

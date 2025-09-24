@@ -1,12 +1,44 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-
+import { useSelector, useDispatch } from "react-redux";
+import { useEffect } from "react";
+import { updateBasicInfo } from "../../Redux/Slices/CurrentUserSlice";
 export default function EditInfoModal({ isOpen, setIsOpen }) {
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.currentUser.profile);
+  const loading = useSelector((state) => state.currentUser.loading);
+
+  // Controlled states prefilled with current user info
+  const [bio, setBio] = useState("");
+  const [liveIn, setLiveIn] = useState("");
+  const [relationship, setRelationship] = useState("");
+  const [phone, setPhone] = useState("");
+  const [hometown, setHometown] = useState("");
+
+  const handleSave = async () => {
+    const dto = {
+      bio,
+      currentLocation: liveIn,
+      relationshipType: relationship,
+      hometown,
+    };
+    console.log("DTO to be sent:", dto);
+    await dispatch(updateBasicInfo(dto));
+    setIsOpen(false);
+  };
+  useEffect(() => {
+    if (user) {
+      setBio(user?.bio || "");
+      setLiveIn(user?.currentLocation || "");
+      setRelationship(user?.relationshipType?.name || "");
+      setPhone(user?.phone || "");
+      setHometown(user?.homeTown || "");
+    }
+  }, [user]);
   return (
     <>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          {/* Modal */}
           <div className="bg-white w-full max-w-md rounded-xl shadow-lg">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
@@ -28,6 +60,8 @@ export default function EditInfoModal({ isOpen, setIsOpen }) {
                 </label>
                 <textarea
                   rows="2"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                   placeholder="Write something about yourself..."
                 ></textarea>
@@ -40,6 +74,8 @@ export default function EditInfoModal({ isOpen, setIsOpen }) {
                 </label>
                 <input
                   type="text"
+                  value={liveIn}
+                  onChange={(e) => setLiveIn(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                   placeholder="Enter your city"
                 />
@@ -50,49 +86,19 @@ export default function EditInfoModal({ isOpen, setIsOpen }) {
                 <label className="block text-sm font-medium text-gray-700">
                   Relationship
                 </label>
-                <select className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white focus:border-blue-500 focus:ring focus:ring-blue-200">
-                  <option value=""></option>
+                <select
+                  value={relationship}
+                  onChange={(e) => setRelationship(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white focus:border-blue-500 focus:ring focus:ring-blue-200"
+                >
+                  <option value="">Relationship</option>
                   <option>Single</option>
                   <option>In Relationship</option>
                   <option>Engaged</option>
                   <option>Married</option>
+                  <option>Divorced</option>
                   <option>It's Complicated</option>
-                  <option>Prefer not to say</option>
                 </select>
-              </div>
-
-              {/* Work */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Profession
-                </label>
-                <input
-                  type="text"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                  placeholder="e.g. Software Engineer"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Company
-                </label>
-                <input
-                  type="text"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                  placeholder="e.g. Google"
-                />
-              </div>
-
-              {/* Education */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Education
-                </label>
-                <input
-                  type="text"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                  placeholder="Enter your education"
-                />
               </div>
 
               {/* Phone */}
@@ -102,6 +108,8 @@ export default function EditInfoModal({ isOpen, setIsOpen }) {
                 </label>
                 <input
                   type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                   placeholder="Enter your phone"
                 />
@@ -114,6 +122,8 @@ export default function EditInfoModal({ isOpen, setIsOpen }) {
                 </label>
                 <input
                   type="text"
+                  value={hometown}
+                  onChange={(e) => setHometown(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                   placeholder="Enter your hometown"
                 />
@@ -123,10 +133,15 @@ export default function EditInfoModal({ isOpen, setIsOpen }) {
             {/* Footer */}
             <div className="border-t border-gray-200 px-4 py-3 flex justify-end">
               <button
-                className="px-4 py-3 text-sm font-medium bg-gray-700 text-white rounded-lg shadow cursor-pointer hover:bg-gray-600 active:scale-95 transition"
-                onClick={() => setIsOpen(false)}
+                disabled={loading}
+                className={`px-4 py-3 text-sm font-medium rounded-lg shadow cursor-pointer transition ${
+                  loading
+                    ? "bg-gray-400 text-gray-200"
+                    : "bg-gray-700 text-white hover:bg-gray-600 active:scale-95"
+                }`}
+                onClick={handleSave}
               >
-                Save Changes
+                {loading ? "Saving..." : "Save Changes"}
               </button>
             </div>
           </div>

@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DataAccess.Entities
 {
-    public class FriendShip:BaseEntity,IBaseEntity
+    public class FriendShip : BaseEntity, IBaseEntity
     {
         [Required]
         public string RequesterId { get; set; }

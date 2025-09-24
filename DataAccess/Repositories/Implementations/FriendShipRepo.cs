@@ -1,10 +1,6 @@
 ﻿using DataAccess.Entities;
 using DataAccess.Repositories.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace DataAccess.Repositories.Implementations
 {
@@ -14,6 +10,14 @@ namespace DataAccess.Repositories.Implementations
         public FriendShipRepo(AppDbContext context) : base(context)
         {
             _context = context;
+        }
+        public async Task<List<FriendShip>> GetFriendWithUser(string userId)
+        {
+            return await _context.FriendShips
+            .Include(f => f.Requester)
+            .Include(f => f.Addressee)
+            .Where(f => f.RequesterId == userId || f.AddresseeId == userId)
+            .ToListAsync();
         }
     }
 }

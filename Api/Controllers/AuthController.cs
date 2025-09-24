@@ -2,7 +2,6 @@
 using BusinessLogic.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Serilog;
 using Shared.Helpers;
 
 namespace Api.Controllers
@@ -21,7 +20,7 @@ namespace Api.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
-     
+
             var result = await _authService.RegisterAsync(dto);
             return Ok(new ApiResponse(200, "Registered successfully!", result));
         }
@@ -36,16 +35,9 @@ namespace Api.Controllers
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
+
             await _authService.LogoutAsync();
             return Ok(new ApiResponse(200, "Logged in successfully!"));
-        }
-        
-        
-        [HttpGet("TestCookie")]
-        [Authorize]
-        public async Task<IActionResult> test()
-        {
-            return Ok("SUCCESS");
         }
     }
 }

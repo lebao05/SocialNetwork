@@ -10,13 +10,13 @@ namespace DataAccess.EntityConfigurations
         {
 
             builder.HasOne(ur => ur.Requester)
-                   .WithMany() 
+                   .WithMany()
                    .HasForeignKey(ur => ur.RequesterId)
-                   .OnDelete(DeleteBehavior.Restrict); 
+                   .OnDelete(DeleteBehavior.Restrict);
 
             // Addressee relationship
             builder.HasOne(ur => ur.Addressee)
-                   .WithMany(f=>f.FriendRequests) 
+                   .WithMany(f => f.FriendRequests)
                    .HasForeignKey(ur => ur.AddresseeId)
                    .OnDelete(DeleteBehavior.Restrict);
 

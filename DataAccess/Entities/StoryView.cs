@@ -1,9 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Helpers;
 using System.ComponentModel.DataAnnotations;
-using Helpers;
+using System.ComponentModel.DataAnnotations.Schema;
 namespace DataAccess.Entities
 {
-    public class StoryView : BaseEntity,IBaseEntity
+    public class StoryView : BaseEntity, IBaseEntity
     {
         [Required]
         public string StoryId { get; set; }

@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace BusinessLogic.DTOs.User
+﻿namespace BusinessLogic.DTOs.User
 {
     public class RegisterDto
     {

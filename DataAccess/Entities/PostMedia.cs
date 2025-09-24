@@ -1,10 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Helpers;
 using System.ComponentModel.DataAnnotations;
-using Helpers;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DataAccess.Entities
 {
-    public class PostMedia:BaseEntity,IBaseEntity
+    public class PostMedia : BaseEntity, IBaseEntity
     {
 
         [Required]
@@ -19,10 +19,10 @@ namespace DataAccess.Entities
 
         public long? FileSize { get; set; }
 
-        public int? Duration { get; set; } 
+        public int? Duration { get; set; }
 
         [StringLength(20)]
-        public string Dimensions { get; set; } 
+        public string Dimensions { get; set; }
 
         public int UploadOrder { get; set; } = 1;
 

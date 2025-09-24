@@ -1,5 +1,4 @@
-﻿using Azure.Core;
-using BusinessLogic.Services.Interfaces;
+﻿using BusinessLogic.Services.Interfaces;
 using DataAccess.Entities;
 using DataAccess.Repositories.Interfaces;
 using Shared.Errors;
@@ -10,7 +9,7 @@ namespace BusinessLogic.Services.Implementations
     {
         private readonly IFriendReqRepo _friendReqRepo;
         private readonly IFriendShipRepo _friendShipRepo;
-        public FriendService(IFriendShipRepo friendshipRepo,IFriendReqRepo friendreqRepo)
+        public FriendService(IFriendShipRepo friendshipRepo, IFriendReqRepo friendreqRepo)
         {
             _friendReqRepo = friendreqRepo;
             _friendShipRepo = friendshipRepo;
@@ -20,15 +19,15 @@ namespace BusinessLogic.Services.Implementations
             var friend = await _friendShipRepo.GetByClause(fr => (fr.RequesterId == requesterId && fr.AddresseeId == addresseeId)
                 || (fr.RequesterId == addresseeId && fr.AddresseeId == requesterId));
             if (friend != null)
-                throw new HttpResponseException(400, "Two are already friend");
+                throw new HttpResponseException(400, "This person are already your friend");
             // Check if a request already exists
             var exists = await _friendReqRepo.GetByClause(
-                fr => (fr.RequesterId == requesterId && fr.AddresseeId == addresseeId && !fr.IsAccepted )
-                || (fr.RequesterId == addresseeId && fr.AddresseeId == requesterId && !fr.IsAccepted )
+                fr => (fr.RequesterId == requesterId && fr.AddresseeId == addresseeId && !fr.IsAccepted)
+                || (fr.RequesterId == addresseeId && fr.AddresseeId == requesterId && !fr.IsAccepted)
             );
 
             if (exists != null)
-                throw new HttpResponseException(400,"Friend request already exists.");
+                throw new HttpResponseException(400, "Friend request already exists.");
 
             var request = new FriendRequest
             {
@@ -42,12 +41,13 @@ namespace BusinessLogic.Services.Implementations
             await _friendReqRepo.AddAsync(request);
             return request;
         }
-        public async Task<FriendShip> AcceptFriendRequestAsync(string requestId)
+        public async Task<FriendShip> AcceptFriendRequestAsync(string requestId, string userId)
         {
             var request = await _friendReqRepo.FindByIdAsync(requestId);
             if (request == null)
-                throw new HttpResponseException(404,"Friend request not found.");
-
+                throw new HttpResponseException(404, "Friend request not found.");
+            if (request.AddresseeId != userId)
+                throw new HttpResponseException(401, "You do not have permission");
             request.IsAccepted = true;
             request.UpdatedAt = DateTime.UtcNow;
             await _friendReqRepo.UpdateAsync(request);
@@ -63,9 +63,11 @@ namespace BusinessLogic.Services.Implementations
             await _friendShipRepo.AddAsync(friendship);
             return friendship;
         }
-        public async Task<bool> DeleteFriendRequestAsync(string requestId)
+        public async Task<bool> DeleteFriendRequestAsync(string requestId, string userId)
         {
             var request = await _friendReqRepo.FindByIdAsync(requestId);
+            if (request.AddresseeId != userId && request.RequesterId != userId)
+                throw new HttpResponseException(401, "You do not have permission");
             if (request == null) return false;
 
             return await _friendReqRepo.DeleteAsync(request);
@@ -87,16 +89,13 @@ namespace BusinessLogic.Services.Implementations
         }
         public async Task<List<FriendShip>> GetFriendsAsync(string userId)
         {
-            var friendships = await _friendShipRepo.FindByClause(
-                f => (f.RequesterId == userId || f.AddresseeId == userId)
+            var friendships = await _friendShipRepo.GetFriendWithUser(userId
             );
             return friendships;
         }
         public async Task<List<FriendRequest>> GetFriendRequestsAsync(string userId)
         {
-            var requests = await _friendReqRepo.FindByClause(
-                fr => fr.AddresseeId == userId && !fr.IsAccepted
-            );
+            var requests = await _friendReqRepo.GetFriendRequestWithUser(userId);
             return requests;
         }
     }

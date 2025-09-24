@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { loginAPI, registerAPI, logoutAPI } from "../../Apis/AuthApi";
-
+import { getMeApi } from "../../Apis/UserApi";
+import { updateBasicInfoApi } from "../../Apis/UserApi";
 // =====================
 // Thunks
 // =====================
@@ -40,7 +41,18 @@ export const register = createAsyncThunk(
     }
   }
 );
-
+export const GetMe = createAsyncThunk(
+  "auth/getme",
+  async (_, { rejectWithValue }) => {
+    try {
+      console.log("GetMe called");
+      const data = await getMeApi();
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
 // 🔹 Logout
 export const logout = createAsyncThunk("auth/logout", async () => {
   await logoutAPI();
@@ -52,9 +64,9 @@ export const logout = createAsyncThunk("auth/logout", async () => {
 // =====================
 const initialState = {
   user: null, // logged-in user info
-  isAuthenticated: false,
   loading: false,
   error: null,
+  isInitialized: false,
 };
 
 // =====================
@@ -66,9 +78,13 @@ const authSlice = createSlice({
   reducers: {
     resetAuthState: (state) => {
       state.user = null;
-      state.isAuthenticated = false;
       state.loading = false;
       state.error = null;
+    },
+    updateAvatarUrl: (state, action) => {
+      if (state.profile) {
+        state.profile.avatarUrl = action.payload;
+      }
     },
   },
   extraReducers: (builder) => {
@@ -81,7 +97,6 @@ const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.data; // unwrap ApiResponse
-        state.isAuthenticated = true;
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
@@ -97,17 +112,31 @@ const authSlice = createSlice({
       .addCase(register.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.data;
-        state.isAuthenticated = true;
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Registration failed";
       });
 
+    builder
+      .addCase(GetMe.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(GetMe.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.data;
+        state.isInitialized = true;
+      })
+      .addCase(GetMe.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Registration failed";
+        state.isInitialized = true;
+      });
+
     // LOGOUT
     builder.addCase(logout.fulfilled, (state) => {
       state.user = null;
-      state.isAuthenticated = false;
       state.loading = false;
       state.error = null;
     });

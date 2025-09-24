@@ -13,19 +13,19 @@ namespace DataAccess.EntityConfigurations
             builder.HasOne(m => m.Group)
                    .WithMany(g => g.Members)
                    .HasForeignKey(m => m.GroupId)
-                   .OnDelete(DeleteBehavior.Restrict); 
+                   .OnDelete(DeleteBehavior.Restrict);
 
             // Relationship with User
             builder.HasOne(m => m.User)
-                   .WithMany(u => u.JoinedCommGroups) 
+                   .WithMany(u => u.JoinedCommGroups)
                    .HasForeignKey(m => m.UserId)
-                   .OnDelete(DeleteBehavior.Restrict); 
+                   .OnDelete(DeleteBehavior.Restrict);
 
             // Relationship with Role
             builder.HasOne(m => m.Role)
                    .WithMany()
                    .HasForeignKey(m => m.RoleId)
-                   .OnDelete(DeleteBehavior.Restrict); 
+                   .OnDelete(DeleteBehavior.Restrict);
 
         }
     }

@@ -13,12 +13,12 @@ namespace DataAccess.EntityConfigurations
             builder.HasOne(s => s.User)
                    .WithMany(u => u.Stories)
                    .HasForeignKey(s => s.UserId)
-                   .OnDelete(DeleteBehavior.Restrict); 
+                   .OnDelete(DeleteBehavior.Restrict);
 
             // Relationship: PrivacySetting (optional)
             builder.HasOne(s => s.PrivacySetting)
                    .WithMany()
-                   .HasForeignKey("PrivacySettingId") 
+                   .HasForeignKey("PrivacySettingId")
                    .OnDelete(DeleteBehavior.Restrict);
 
         }

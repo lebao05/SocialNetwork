@@ -29,7 +29,7 @@ namespace DataAccess.EntityConfigurations
             // Optional: Related Group
             builder.HasOne(n => n.RelatedGroup)
                    .WithMany()
-                   .HasForeignKey("RelatedCommunityGroupId") 
+                   .HasForeignKey("RelatedCommunityGroupId")
                    .OnDelete(DeleteBehavior.Restrict);
 
             // Optional: Related Comment

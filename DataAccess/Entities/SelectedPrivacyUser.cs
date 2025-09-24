@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DataAccess.Entities
 {
-    public class SelectedPrivacyUser : BaseEntity,IBaseEntity
+    public class SelectedPrivacyUser : BaseEntity, IBaseEntity
     {
         [Required]
         public string PrivacyId { get; set; }

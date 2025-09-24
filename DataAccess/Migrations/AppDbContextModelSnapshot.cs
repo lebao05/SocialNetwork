@@ -30,6 +30,10 @@ namespace DataAccess.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("AvatarUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Bio")
                         .HasColumnType("nvarchar(max)");
 
@@ -37,15 +41,19 @@ namespace DataAccess.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CoverUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("DateOfBirth")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Education")
+                    b.Property<string>("CurrentLocation")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime?>("DateOfBirth")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
@@ -77,10 +85,6 @@ namespace DataAccess.Migrations
 
                     b.Property<DateTime?>("LastSeen")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("Location")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
@@ -297,6 +301,36 @@ namespace DataAccess.Migrations
                     b.ToTable("CommunityGroupMember");
                 });
 
+            modelBuilder.Entity("DataAccess.Entities.Education", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsStudying")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Major")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SchoolName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Educations");
+                });
+
             modelBuilder.Entity("DataAccess.Entities.FriendRequest", b =>
                 {
                     b.Property<string>("Id")
@@ -312,6 +346,9 @@ namespace DataAccess.Migrations
                     b.Property<bool>("Deleted")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsAccepted")
+                        .HasColumnType("bit");
+
                     b.Property<string>("RequesterId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -325,7 +362,7 @@ namespace DataAccess.Migrations
 
                     b.HasIndex("RequesterId");
 
-                    b.ToTable("UserRelationships");
+                    b.ToTable("FriendRequests");
                 });
 
             modelBuilder.Entity("DataAccess.Entities.FriendShip", b =>
@@ -356,7 +393,7 @@ namespace DataAccess.Migrations
 
                     b.HasIndex("RequesterId");
 
-                    b.ToTable("UserRelationshipRequests");
+                    b.ToTable("FriendShips");
                 });
 
             modelBuilder.Entity("DataAccess.Entities.GroupMemberRole", b =>
@@ -478,38 +515,6 @@ namespace DataAccess.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("NotificationTypes");
-                });
-
-            modelBuilder.Entity("DataAccess.Entities.PersonalImage", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("Deleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsAvatar")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsCurrent")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Url")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("PersonalImages");
                 });
 
             modelBuilder.Entity("DataAccess.Entities.Post", b =>
@@ -861,6 +866,36 @@ namespace DataAccess.Migrations
                     b.ToTable("StoryViews");
                 });
 
+            modelBuilder.Entity("DataAccess.Entities.Work", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsWorking")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Works");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -1075,6 +1110,17 @@ namespace DataAccess.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("DataAccess.Entities.Education", b =>
+                {
+                    b.HasOne("DataAccess.Entities.AppUser", "User")
+                        .WithMany("Educations")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("DataAccess.Entities.FriendRequest", b =>
                 {
                     b.HasOne("DataAccess.Entities.AppUser", "Addressee")
@@ -1156,17 +1202,6 @@ namespace DataAccess.Migrations
                     b.Navigation("RelatedPost");
 
                     b.Navigation("RelatedUser");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("DataAccess.Entities.PersonalImage", b =>
-                {
-                    b.HasOne("DataAccess.Entities.AppUser", "User")
-                        .WithMany("PersonalImages")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -1312,6 +1347,17 @@ namespace DataAccess.Migrations
                     b.Navigation("Viewer");
                 });
 
+            modelBuilder.Entity("DataAccess.Entities.Work", b =>
+                {
+                    b.HasOne("DataAccess.Entities.AppUser", "User")
+                        .WithMany("Works")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -1367,6 +1413,8 @@ namespace DataAccess.Migrations
                 {
                     b.Navigation("Comments");
 
+                    b.Navigation("Educations");
+
                     b.Navigation("FriendAddressees");
 
                     b.Navigation("FriendRequesters");
@@ -1377,11 +1425,11 @@ namespace DataAccess.Migrations
 
                     b.Navigation("Notifications");
 
-                    b.Navigation("PersonalImages");
-
                     b.Navigation("Posts");
 
                     b.Navigation("Stories");
+
+                    b.Navigation("Works");
                 });
 
             modelBuilder.Entity("DataAccess.Entities.Comment", b =>

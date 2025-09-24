@@ -10,18 +10,25 @@ import {
   User,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
+import { useSelector } from "react-redux";
+import logo from "../../assets/logo.png";
+import anonymous from "../../assets/anonymous.png";
 export default function Navbar() {
+  const user = useSelector((state) => state.auth.user);
   const nagivate = useNavigate();
   return (
     <nav className="flex items-center justify-between px-4 py-2 bg-white shadow sticky top-0 z-10">
       {/* Left: Logo + Search */}
       <div className="flex items-center space-x-2">
         <div
-          className="text-2xl font-bold pt-0.5 hover:bg-gray-200 transition:1s bg-gray-100 w-10 h-10 text-center rounded-full text-blue-600 cursor-pointer"
+          className="w-9 h-9 rouded-full cursor-pointer"
           onClick={() => nagivate("/")}
         >
-          f
+          <img
+            src={logo}
+            alt="Logo"
+            className="w-full h-full object-cover rounded-full"
+          />
         </div>
         <input
           type="text"
@@ -55,10 +62,10 @@ export default function Navbar() {
           <Bell className="w-5 h-5 text-gray-700" />
         </button>
         <img
-          src="https://i.pravatar.cc/40"
+          src={user?.avatar || anonymous}
           alt="avatar"
           className="w-8 h-8 rounded-full cursor-pointer"
-          onClick={() => nagivate("/profile")}
+          onClick={() => nagivate("/profile/" + user.id)}
         />
       </div>
     </nav>

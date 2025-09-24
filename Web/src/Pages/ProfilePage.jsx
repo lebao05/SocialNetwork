@@ -1,28 +1,32 @@
-import { useState } from "react";
-import {
-  Camera,
-  Edit,
-  MapPin,
-  Briefcase,
-  GraduationCap,
-  Heart,
-  Calendar,
-  Users,
-  ImageIcon,
-  MessageCircle,
-} from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Camera, Edit, MapPin, Users, Upload, Trash2, X } from "lucide-react";
 import PostsTab from "../Components/Profile/PostsTab";
 import FriendsTab from "../Components/Profile/FriendsTab";
 import Navbar from "../Components/Home/NavBar";
 import EditInfoModal from "../Components/Profile/EditInfoModal";
 import FollowingTab from "../Components/Profile/FollowingTab";
 import AboutTab from "../Components/Profile/AboutTab";
-
-export default function ProfilePage() {
-  const [isOpen, setIsOpen] = useState(false);
+import Gray from "../Assets/gray.jpg";
+import anonymous from "../Assets/anonymous.png";
+import ImageSelectionModal from "../Components/Profile/ImageSelectionModal";
+import { useDispatch } from "react-redux";
+import { getProfile } from "../Redux/Slices/CurrentUserSlice";
+import { useParams } from "react-router-dom";
+import { useSelector } from "react-redux";
+export default function ProfilePage({ unshowNavbar }) {
+  const [isEditInfoOpen, setIsEditInfoOpen] = useState(false);
+  const [isAvatarSelectionOpen, setIsAvatarSelectionOpen] = useState(false);
+  const [isCoverSelectionOpen, setIsCoverSelectionOpen] = useState(false);
+  const { userId } = useParams();
+  const dispatch = useDispatch();
+  const profile = useSelector((state) => state.currentUser.profile);
+  const [avatarImage, setAvatarImage] = useState();
+  const [coverImage, setCoverImage] = useState();
 
   const tabs = ["Posts", "About", "Photos", "Videos", "Friends", "Following"];
   const [activeTab, setActiveTab] = useState("Posts");
+
+  // Sample data (same as before)
   const friendsData = [
     {
       name: "Alice",
@@ -96,14 +100,31 @@ export default function ProfilePage() {
     },
   ];
 
-  // Replace photo gallery with same URL
-  const profilePhotos = Array(6).fill(
-    "https://media.yeah1.com/files/ngoctran/2022/07/01/289693821_582015943280803_2102006602626651935_n-205941.jpg"
-  );
+  const profilePhotos = Array(6).fill(avatarImage);
 
+  // Avatar handlers
+  const handleAvatarSelect = (url) => setAvatarImage(url);
+  const handleAvatarUpload = (data) => setAvatarImage(data);
+  const handleDeleteAvatar = () => setAvatarImage("");
+
+  // Cover handlers
+  const handleCoverSelect = (url) => setCoverImage(url);
+  const handleCoverUpload = (data) => setCoverImage(data);
+  const handleDeleteCover = () => setCoverImage("");
+  useEffect(() => {
+    if (userId) {
+      dispatch(getProfile(userId));
+    }
+  }, [dispatch, userId]);
+  useEffect(() => {
+    if (profile) {
+      setAvatarImage(profile.avatar || "");
+      setCoverImage(profile.coverPhoto || "");
+    }
+  }, [profile]);
   return (
     <div>
-      <Navbar />
+      {!unshowNavbar && <Navbar />}
       <div className="min-h-screen bg-gray-100">
         <div className="p-6">
           <div className="max-w-5xl mx-auto space-y-6">
@@ -111,12 +132,16 @@ export default function ProfilePage() {
             <div className="bg-white rounded-lg shadow overflow-hidden">
               <div className="relative">
                 {/* Cover Photo */}
-                <div className="h-80 bg-gradient-to-r from-blue-400 to-blue-600">
+                <div
+                  className="h-80 bg-gradient-to-r from-blue-400 to-blue-600"
+                  onClick={() => setIsCoverSelectionOpen(true)}
+                >
                   <img
-                    src="https://media.yeah1.com/files/ngoctran/2022/07/01/289693821_582015943280803_2102006602626651935_n-205941.jpg"
+                    src={coverImage || Gray}
                     alt="Cover"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover hover:opacity-95 cursor-pointer transition-opacity"
                   />
+
                   <button className="absolute bottom-4 right-4 flex items-center px-3 py-1 bg-white rounded shadow hover:bg-gray-100 text-sm">
                     <Camera className="h-4 w-4 mr-2" />
                     Edit Cover Photo
@@ -125,13 +150,17 @@ export default function ProfilePage() {
 
                 {/* Profile Picture */}
                 <div className="absolute -bottom-16 left-8">
-                  <div className="relative">
+                  <div className="relative rounded-full bg-white">
                     <img
-                      src="https://media.yeah1.com/files/ngoctran/2022/07/01/289693821_582015943280803_2102006602626651935_n-205941.jpg"
+                      src={avatarImage || anonymous}
                       alt="User"
-                      className="h-32 w-32 rounded-full border-4 border-white object-cover"
+                      className="h-32 w-32 rounded-full border-4 border-white object-cover hover:opacity-90 cursor-pointer transition-opacity"
+                      onClick={() => setIsAvatarSelectionOpen(true)}
                     />
-                    <button className="absolute bottom-2 right-2 h-8 w-8 flex items-center justify-center rounded-full bg-white shadow hover:bg-gray-100">
+                    <button
+                      onClick={() => setIsAvatarSelectionOpen(true)}
+                      className="absolute bottom-2 right-2 h-8 w-8 flex items-center justify-center rounded-full bg-white shadow hover:bg-gray-100"
+                    >
                       <Camera className="h-4 w-4" />
                     </button>
                   </div>
@@ -142,7 +171,9 @@ export default function ProfilePage() {
                 <div className="flex items-start justify-between flex-wrap">
                   <div>
                     <h1 className="text-3xl font-bold text-gray-900">
-                      John Doe
+                      {profile
+                        ? `${profile.firstName} ${profile.lastName}`
+                        : ""}
                     </h1>
                     <p className="text-gray-600 mt-1">
                       Software Developer & Mountain Enthusiast
@@ -150,7 +181,7 @@ export default function ProfilePage() {
                     <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500 flex-wrap">
                       <div className="flex items-center">
                         <MapPin className="h-4 w-4 mr-1" />
-                        San Francisco, CA
+                        {profile ? profile.currentLocation : "Unknown City"}
                       </div>
                       <div className="flex items-center">
                         <Users className="h-4 w-4 mr-1" />
@@ -167,7 +198,7 @@ export default function ProfilePage() {
                       Add Story
                     </button>
                   </div>
-                </div>{" "}
+                </div>
                 <div className="mt-6 border-t border-gray-200">
                   {tabs.map((tab) => (
                     <button
@@ -185,53 +216,49 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
-            <EditInfoModal isOpen={isOpen} setIsOpen={setIsOpen} />
+            {/* Modals */}
+            <EditInfoModal
+              isOpen={isEditInfoOpen}
+              setIsOpen={setIsEditInfoOpen}
+            />
+
+            <ImageSelectionModal
+              isOpen={isAvatarSelectionOpen}
+              onClose={() => setIsAvatarSelectionOpen(false)}
+              onSelectImage={handleAvatarSelect}
+              onUpload={handleAvatarUpload}
+              onDelete={handleDeleteAvatar}
+              title="Choose Profile Picture"
+              showDelete={true}
+            />
+
+            <ImageSelectionModal
+              isOpen={isCoverSelectionOpen}
+              onClose={() => setIsCoverSelectionOpen(false)}
+              onSelectImage={handleCoverSelect}
+              onUpload={handleCoverUpload}
+              onDelete={handleDeleteCover}
+              title="Choose Cover Photo"
+              showDelete={true}
+            />
+
+            {/* Tabs */}
             {activeTab === "Posts" && (
               <PostsTab
                 myPosts={myPosts}
                 profilePhotos={profilePhotos}
-                setIsOpen={setIsOpen}
-                isOpen={isOpen}
+                setIsOpen={setIsEditInfoOpen}
+                isOpen={isEditInfoOpen}
               />
             )}
-
             {activeTab === "Friends" && (
               <FriendsTab friendsData={friendsData} />
             )}
             {activeTab === "Videos" && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                  Videos
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {videosData.map((video, i) => (
-                    <video
-                      key={i}
-                      src={video.url}
-                      controls
-                      className="w-full h-48 rounded-lg object-cover"
-                    />
-                  ))}
-                </div>
-              </div>
+              <div className="bg-white rounded-lg shadow p-6">...</div>
             )}
-
             {activeTab === "Photos" && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                  Images
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {imagesData.map((img, i) => (
-                    <img
-                      key={i}
-                      src={img.url}
-                      alt={`Image ${i}`}
-                      className="w-full h-40 rounded-lg object-cover"
-                    />
-                  ))}
-                </div>
-              </div>
+              <div className="bg-white rounded-lg shadow p-6">...</div>
             )}
             {activeTab === "Following" && (
               <FollowingTab followingData={followingData} />

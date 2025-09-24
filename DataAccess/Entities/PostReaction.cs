@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DataAccess.Entities
 {
-    public class PostReaction : BaseEntity,IBaseEntity
+    public class PostReaction : BaseEntity, IBaseEntity
     {
         [Required]
         public string PostId { get; set; }

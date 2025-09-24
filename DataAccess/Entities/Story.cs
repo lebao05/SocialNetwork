@@ -1,10 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Helpers;
 using System.ComponentModel.DataAnnotations;
-using Helpers;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DataAccess.Entities
 {
-    public class Story : BaseEntity,IBaseEntity
+    public class Story : BaseEntity, IBaseEntity
     {
 
         [Required]
@@ -22,12 +22,12 @@ namespace DataAccess.Entities
         public string Caption { get; set; }
 
         [StringLength(7)]
-        public string BackgroundColor { get; set; } 
+        public string BackgroundColor { get; set; }
 
         [StringLength(7)]
-        public string TextColor { get; set; } 
+        public string TextColor { get; set; }
 
-        public int Duration { get; set; } = 24; 
+        public int Duration { get; set; } = 24;
 
         [Required]
         public DateTime ExpiresAt { get; set; }

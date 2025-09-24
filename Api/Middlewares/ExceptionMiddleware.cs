@@ -1,5 +1,4 @@
 ﻿using Shared.Errors;
-using Shared.Errors;
 using Shared.Helpers;
 using System.Text.Json;
 namespace Api.Middlewares

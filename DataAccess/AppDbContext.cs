@@ -2,8 +2,6 @@
 using DataAccess.EntityConfigurations;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Emit;
-using System.Text.RegularExpressions;
 namespace DataAccess
 {
     public class AppDbContext : IdentityDbContext<AppUser>
@@ -36,7 +34,6 @@ namespace DataAccess
 
         // Reactions
         public DbSet<ReactionType> ReactionTypes { get; set; }
-        public DbSet<PersonalImage> PersonalImages { get; set; }
 
         // Friends
         public DbSet<FriendRequest> FriendRequests { get; set; }
@@ -44,7 +41,7 @@ namespace DataAccess
         public DbSet<RelationshipType> RelationshipTypes { get; set; }
 
         //Education And Work
-        public DbSet<Education> Educations {  get; set; }
+        public DbSet<Education> Educations { get; set; }
 
         public DbSet<Work> Works { get; set; }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
@@ -96,6 +93,9 @@ namespace DataAccess
             modelBuilder.Entity<PrivacySetting>().HasQueryFilter(x => !x.Deleted);
             modelBuilder.Entity<FriendRequest>().HasQueryFilter(x => !x.Deleted);
             modelBuilder.Entity<FriendShip>().HasQueryFilter(x => !x.Deleted);
+            modelBuilder.Entity<Work>().HasQueryFilter(x => !x.Deleted);
+            modelBuilder.Entity<Education>().HasQueryFilter(x => !x.Deleted);
+
             #endregion
         }
     }

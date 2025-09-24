@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -77,19 +76,6 @@ namespace DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "RelationshipStatuses",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Deleted = table.Column<bool>(type: "bit", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_RelationshipStatuses", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "RelationshipTypes",
                 columns: table => new
                 {
@@ -145,11 +131,10 @@ namespace DataAccess.Migrations
                     DateOfBirth = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Gender = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Bio = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Location = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    CurrentLocation = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     HomeTown = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     Work = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    Education = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    RelationshipStatusId = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    RelationshipTypeId = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -174,9 +159,9 @@ namespace DataAccess.Migrations
                     table.PrimaryKey("PK_Users", x => x.Id);
                     table.CheckConstraint("CK_AppUser_Gender", "Gender IN ('Male', 'Female', 'Other')");
                     table.ForeignKey(
-                        name: "FK_Users_RelationshipStatuses_RelationshipStatusId",
-                        column: x => x.RelationshipStatusId,
-                        principalTable: "RelationshipStatuses",
+                        name: "FK_Users_RelationshipTypes_RelationshipTypeId",
+                        column: x => x.RelationshipTypeId,
+                        principalTable: "RelationshipTypes",
                         principalColumn: "Id");
                 });
 
@@ -199,6 +184,84 @@ namespace DataAccess.Migrations
                         principalTable: "Roles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Educations",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    IsStudying = table.Column<bool>(type: "bit", nullable: false),
+                    SchoolName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Major = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Deleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Educations", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Educations_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "FriendRequests",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    RequesterId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    AddresseeId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Deleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FriendRequests", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_FriendRequests_Users_AddresseeId",
+                        column: x => x.AddresseeId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_FriendRequests_Users_RequesterId",
+                        column: x => x.RequesterId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "FriendShips",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    RequesterId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    AddresseeId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Deleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FriendShips", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_FriendShips_Users_AddresseeId",
+                        column: x => x.AddresseeId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_FriendShips_Users_RequesterId",
+                        column: x => x.RequesterId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -243,22 +306,22 @@ namespace DataAccess.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    UserID = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Url = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    IsAvtar = table.Column<bool>(type: "bit", nullable: false),
+                    IsAvatar = table.Column<bool>(type: "bit", nullable: false),
                     IsCurrent = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    AppUserId = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     Deleted = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_PersonalImages", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_PersonalImages_Users_AppUserId",
-                        column: x => x.AppUserId,
+                        name: "FK_PersonalImages_Users_UserId",
+                        column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -366,76 +429,6 @@ namespace DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "UserRelationshipRequests",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    RequesterId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    AddresseeId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    StatusId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Deleted = table.Column<bool>(type: "bit", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_UserRelationshipRequests", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_UserRelationshipRequests_RelationshipStatuses_StatusId",
-                        column: x => x.StatusId,
-                        principalTable: "RelationshipStatuses",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_UserRelationshipRequests_Users_AddresseeId",
-                        column: x => x.AddresseeId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_UserRelationshipRequests_Users_RequesterId",
-                        column: x => x.RequesterId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "UserRelationships",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    RequesterId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    AddresseeId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    TypeId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Deleted = table.Column<bool>(type: "bit", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_UserRelationships", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_UserRelationships_RelationshipTypes_TypeId",
-                        column: x => x.TypeId,
-                        principalTable: "RelationshipTypes",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_UserRelationships_Users_AddresseeId",
-                        column: x => x.AddresseeId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_UserRelationships_Users_RequesterId",
-                        column: x => x.RequesterId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "UserRoles",
                 columns: table => new
                 {
@@ -477,6 +470,28 @@ namespace DataAccess.Migrations
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Works",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    CompanyName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Position = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsWorking = table.Column<bool>(type: "bit", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Deleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Works", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Works_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -792,6 +807,31 @@ namespace DataAccess.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Educations_UserId",
+                table: "Educations",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FriendRequests_AddresseeId",
+                table: "FriendRequests",
+                column: "AddresseeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FriendRequests_RequesterId",
+                table: "FriendRequests",
+                column: "RequesterId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FriendShips_AddresseeId",
+                table: "FriendShips",
+                column: "AddresseeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FriendShips_RequesterId",
+                table: "FriendShips",
+                column: "RequesterId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Groups_CreatedBy",
                 table: "Groups",
                 column: "CreatedBy");
@@ -832,9 +872,9 @@ namespace DataAccess.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PersonalImages_AppUserId",
+                name: "IX_PersonalImages_UserId",
                 table: "PersonalImages",
-                column: "AppUserId");
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PostMedias_PostId",
@@ -934,36 +974,6 @@ namespace DataAccess.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserRelationshipRequests_AddresseeId",
-                table: "UserRelationshipRequests",
-                column: "AddresseeId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UserRelationshipRequests_RequesterId",
-                table: "UserRelationshipRequests",
-                column: "RequesterId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UserRelationshipRequests_StatusId",
-                table: "UserRelationshipRequests",
-                column: "StatusId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UserRelationships_AddresseeId",
-                table: "UserRelationships",
-                column: "AddresseeId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UserRelationships_RequesterId",
-                table: "UserRelationships",
-                column: "RequesterId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UserRelationships_TypeId",
-                table: "UserRelationships",
-                column: "TypeId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_UserRoles_RoleId",
                 table: "UserRoles",
                 column: "RoleId");
@@ -974,9 +984,9 @@ namespace DataAccess.Migrations
                 column: "NormalizedEmail");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Users_RelationshipStatusId",
+                name: "IX_Users_RelationshipTypeId",
                 table: "Users",
-                column: "RelationshipStatusId");
+                column: "RelationshipTypeId");
 
             migrationBuilder.CreateIndex(
                 name: "UserNameIndex",
@@ -984,6 +994,11 @@ namespace DataAccess.Migrations
                 column: "NormalizedUserName",
                 unique: true,
                 filter: "[NormalizedUserName] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Works_UserId",
+                table: "Works",
+                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -991,6 +1006,15 @@ namespace DataAccess.Migrations
         {
             migrationBuilder.DropTable(
                 name: "CommunityGroupMember");
+
+            migrationBuilder.DropTable(
+                name: "Educations");
+
+            migrationBuilder.DropTable(
+                name: "FriendRequests");
+
+            migrationBuilder.DropTable(
+                name: "FriendShips");
 
             migrationBuilder.DropTable(
                 name: "Notifications");
@@ -1020,16 +1044,13 @@ namespace DataAccess.Migrations
                 name: "UserLogins");
 
             migrationBuilder.DropTable(
-                name: "UserRelationshipRequests");
-
-            migrationBuilder.DropTable(
-                name: "UserRelationships");
-
-            migrationBuilder.DropTable(
                 name: "UserRoles");
 
             migrationBuilder.DropTable(
                 name: "UserTokens");
+
+            migrationBuilder.DropTable(
+                name: "Works");
 
             migrationBuilder.DropTable(
                 name: "GroupMemberRole");
@@ -1045,9 +1066,6 @@ namespace DataAccess.Migrations
 
             migrationBuilder.DropTable(
                 name: "StoryViews");
-
-            migrationBuilder.DropTable(
-                name: "RelationshipTypes");
 
             migrationBuilder.DropTable(
                 name: "Roles");
@@ -1074,7 +1092,7 @@ namespace DataAccess.Migrations
                 name: "PrivacyLevels");
 
             migrationBuilder.DropTable(
-                name: "RelationshipStatuses");
+                name: "RelationshipTypes");
         }
     }
 }

@@ -1,9 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Helpers;
 using System.ComponentModel.DataAnnotations;
-using Helpers;
+using System.ComponentModel.DataAnnotations.Schema;
 namespace DataAccess.Entities
 {
-    public class FriendRequest : BaseEntity,IBaseEntity
+    public class FriendRequest : BaseEntity, IBaseEntity
     {
         [Required]
         public string RequesterId { get; set; }
@@ -11,7 +11,7 @@ namespace DataAccess.Entities
         [Required]
         public string AddresseeId { get; set; }
 
-        public bool IsAccepted = false;
+        public bool IsAccepted { get; set; } = false; 
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -1,19 +1,16 @@
 ﻿using Helpers;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DataAccess.Entities
 {
-    public class Work:BaseEntity,IBaseEntity
+    public class Work : BaseEntity, IBaseEntity
     {
         [Required]
-        public string CompanyName;
+        public string CompanyName { get; set; }
+        [Required]
+        public string Position { get; set; }
 
-        public bool IsWorking = true;
+        public bool IsWorking { get; set; } = true;
 
         [Required]
         public string UserId { get; set; }

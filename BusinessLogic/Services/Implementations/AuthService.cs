@@ -19,17 +19,19 @@ namespace BusinessLogic.Services.Implementations
         private readonly UserManager<AppUser> _userManager;
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
-
+        private readonly IUserService _userService;
         public AuthService(
             UserManager<AppUser> userManager,
             IConfiguration config,
             IHttpContextAccessor httpContextAccessor,
-            IMapper mapper)
+            IMapper mapper,
+            IUserService userService)
         {
             _userManager = userManager;
             _config = config;
             _httpContextAccessor = httpContextAccessor;
             _mapper = mapper;
+            _userService=userService;
         }
 
         public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
@@ -46,7 +48,7 @@ namespace BusinessLogic.Services.Implementations
             // Check if email already exists
             var existingUser = await _userManager.FindByEmailAsync(dto.Email);
             if (existingUser != null)
-                throw new HttpResponseException(StatusCodes.Status404NotFound,"Email already exists.");
+                throw new HttpResponseException(StatusCodes.Status404NotFound, "Email already exists.");
 
             // Create user
             var result = await _userManager.CreateAsync(user, dto.Password);
@@ -55,9 +57,9 @@ namespace BusinessLogic.Services.Implementations
             {
                 // Take only the first error
                 var firstError = result.Errors.FirstOrDefault()?.Description ?? "Registration failed.";
-                throw new HttpResponseException(StatusCodes.Status400BadRequest,firstError);
+                throw new HttpResponseException(StatusCodes.Status400BadRequest, firstError);
             }
-
+            user = await _userManager.FindByEmailAsync(dto.Email);
             // Generate JWT and set cookie
             string token = GenerateJwtToken(user);
             SetCookie("AccessToken", token);
@@ -73,7 +75,7 @@ namespace BusinessLogic.Services.Implementations
             var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
             {
-                throw new HttpResponseException(StatusCodes.Status401Unauthorized,"Invalid login credentials.");
+                throw new HttpResponseException(StatusCodes.Status401Unauthorized, "Invalid login credentials.");
             }
 
             string token = GenerateJwtToken(user);

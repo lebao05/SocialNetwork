@@ -9,7 +9,7 @@ namespace Api.Configs
 {
     public static class DependeciesContainer
     {
-        public static void AddDependencies(this IServiceCollection services,IConfiguration configuration)
+        public static void AddDependencies(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddHttpContextAccessor();
             //Services
@@ -18,10 +18,17 @@ namespace Api.Configs
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IFriendService, FriendService>();
 
+
             //Repositories
-            services.AddScoped<IPersonalImageRepo,PersonalImageRepo>();
-            services.AddScoped<IFriendShipRepo,FriendShipRepo>();
-            services.AddScoped<IFriendReqRepo,FriendReqRepo>();
+            services.AddScoped<IFriendShipRepo, FriendShipRepo>();
+            services.AddScoped<IFriendReqRepo, FriendReqRepo>();
+            services.AddScoped<IEducationRepo, EducationRepo>();
+            services.AddScoped<IWorkRepo, WorkRepo>();
+            services.AddScoped<IUserRepo, UserRepo>();
+
+
+            //Helpers
+            services.AddScoped<IGeneralRepo, GeneralRepo>();
         }
     }
 }

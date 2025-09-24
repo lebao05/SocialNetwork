@@ -1,3 +1,4 @@
+import { useSelector } from "react-redux";
 import CreatePost from "../Post/CreatePost";
 import Post from "../Post/Post";
 import {
@@ -16,6 +17,7 @@ export default function PostsTab({
   setIsOpen,
   isOpen,
 }) {
+  const profile = useSelector((state) => state.currentUser.profile);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left Column */}
@@ -27,30 +29,60 @@ export default function PostsTab({
             <div>
               <p className="font-semibold text-gray-800">Bio</p>
               <p>
-                Passionate developer who loves building products and hiking
-                mountains 🌄
+                {profile && profile.bio
+                  ? profile.bio
+                  : "This user has not added a bio yet."}
               </p>
             </div>
-            <div className="flex items-center space-x-3">
-              <Briefcase className="h-5 w-5 text-gray-400" />
-              <span>Works at Tech Innovations Inc.</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <GraduationCap className="h-5 w-5 text-gray-400" />
-              <span>Studied Computer Science at Stanford University</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <MapPin className="h-5 w-5 text-gray-400" />
-              <span>Lives in San Francisco, California</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Heart className="h-5 w-5 text-gray-400" />
-              <span>In a relationship</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Calendar className="h-5 w-5 text-gray-400" />
-              <span>Joined March 2020</span>
-            </div>
+            {profile &&
+              profile.works &&
+              profile.works.length > 0 &&
+              profile.works.map((work, index) => (
+                <div key={index} className="flex items-center space-x-3">
+                  <Briefcase className="h-5 w-5 text-gray-400" />
+                  <span>
+                    {work.isWorking ? "Working" : "Worked"}{" "}
+                    {work.position ? `as ${work.position}` : ""}{" "}
+                    {work.companyName ? `at ${work.companyName}` : ""}
+                  </span>
+                </div>
+              ))}
+            {profile &&
+              profile.educations &&
+              profile.educations.length > 0 &&
+              profile.educations.map((edu, index) => (
+                <div key={index} className="flex items-center space-x-3">
+                  <GraduationCap className="h-5 w-5 text-gray-400" />
+                  <span>
+                    {edu.isStudying ? "Studying" : "Studied"} {edu.major} at{" "}
+                    {edu.schoolName}
+                  </span>
+                </div>
+              ))}
+            {profile && profile.currentLocation && (
+              <div className="flex items-center space-x-3">
+                <MapPin className="h-5 w-5 text-gray-400" />
+                <span>Lives in {profile.currentLocation}</span>
+              </div>
+            )}{" "}
+            {profile && profile.homeTown && (
+              <div className="flex items-center space-x-3">
+                <MapPin className="h-5 w-5 text-gray-400" />
+                <span>Hometown {profile.homeTown}</span>
+              </div>
+            )}
+            {profile && profile.relationshipType && (
+              <div className="flex items-center space-x-3">
+                <Heart className="h-5 w-5 text-gray-400" />
+                <span>{profile.relationshipType.name}</span>
+              </div>
+            )}
+            {profile && profile.createdAt && (
+              <div className="flex items-center space-x-3">
+                <Calendar className="h-5 w-5 text-gray-400" />
+                <span>Joined {new Date(profile?.createdAt).getFullYear()}</span>
+              </div>
+            )}
           </div>
           <button
             onClick={() => setIsOpen(!isOpen)}

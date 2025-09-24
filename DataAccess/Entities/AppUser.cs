@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DataAccess.Entities
 {
@@ -24,7 +23,8 @@ namespace DataAccess.Entities
         public string? HomeTown { get; set; }
         [StringLength(255)]
         public string? Work { get; set; }
-
+        public string AvatarUrl { get; set; } = string.Empty;
+        public string CoverUrl { get; set; } = string.Empty;
         public virtual RelationshipType? RelationshipType { get; set; }
 
         public bool IsActive { get; set; } = true;
@@ -34,9 +34,6 @@ namespace DataAccess.Entities
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime? LastSeen { get; set; }
-
-        public virtual ICollection<PersonalImage> PersonalImages { get; set; } = new List<PersonalImage>();
-
         public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
         public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
         public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();

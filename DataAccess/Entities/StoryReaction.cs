@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 namespace DataAccess.Entities
 {
-    public class StoryReaction : BaseEntity,IBaseEntity
+    public class StoryReaction : BaseEntity, IBaseEntity
     {
         [Required]
         public ReactionType ReactionType { get; set; }

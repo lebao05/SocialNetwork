@@ -1,10 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Helpers;
 using System.ComponentModel.DataAnnotations;
-using Helpers;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DataAccess.Entities
 {
-    public class CommunityGroupMember : BaseEntity,IBaseEntity
+    public class CommunityGroupMember : BaseEntity, IBaseEntity
     {
 
         [Required]
