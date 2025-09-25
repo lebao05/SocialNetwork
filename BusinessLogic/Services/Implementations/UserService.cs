@@ -51,8 +51,10 @@ namespace BusinessLogic.Services.Implementations
                 user.AvatarUrl = blobUrl;
             else
                 user.CoverUrl = blobUrl;
-
-                return blobUrl;
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+                throw new HttpResponseException(500, "Failed to update user image.");
+            return blobUrl;
         }
         public async Task<Work> AddWork(AddWorkDto dto, string userId)
         {

@@ -39,7 +39,7 @@ export function LeftSideBar() {
       >
         <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
           <img
-            src={user.avatar || anonymous}
+            src={user.avatarUrl || anonymous}
             alt="User Avatar"
             className="h-full w-full object-cover"
             onError={(e) => {

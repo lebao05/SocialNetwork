@@ -81,7 +81,7 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = null;
     },
-    updateAvatarUrl: (state, action) => {
+    updateAuthAvatarUrl: (state, action) => {
       if (state.profile) {
         state.profile.avatarUrl = action.payload;
       }
@@ -146,5 +146,5 @@ const authSlice = createSlice({
 // =====================
 // Export
 // =====================
-export const { resetAuthState } = authSlice.actions;
+export const { resetAuthState, updateAuthAvatarUrl } = authSlice.actions;
 export default authSlice.reducer;

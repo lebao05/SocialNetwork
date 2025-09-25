@@ -62,7 +62,7 @@ export default function Navbar() {
           <Bell className="w-5 h-5 text-gray-700" />
         </button>
         <img
-          src={user?.avatar || anonymous}
+          src={user?.avatarUrl || anonymous}
           alt="avatar"
           className="w-8 h-8 rounded-full cursor-pointer"
           onClick={() => nagivate("/profile/" + user.id)}

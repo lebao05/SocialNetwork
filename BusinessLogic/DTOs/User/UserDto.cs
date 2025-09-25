@@ -13,8 +13,8 @@ namespace BusinessLogic.DTOs.User
         public string? Bio { get; set; }
         public DateTime? DateOfBirth { get; set; }
         public string? CurrentLocation { get; set; }
-        public string AvatarUrl { get; set; } = string.Empty;
-        public string CoverUrl { get; set; } = string.Empty;
+        public string AvatarUrl { get; set; }
+        public string CoverUrl { get; set; }
         public string? HomeTown { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public virtual RelationshipType? RelationshipType { get; set; }

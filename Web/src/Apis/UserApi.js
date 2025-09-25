@@ -5,10 +5,11 @@ import Axios from "../Configs/Axios";
 export const uploadAvatarApi = async (file) => {
   const formData = new FormData();
   formData.append("file", file);
-
+  console.log("Uploading file:", file);
   const res = await Axios.post("/user/uploadavatar", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
+  console.log("Upload response:", res);
   return res.data;
 };
 

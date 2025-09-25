@@ -10,19 +10,40 @@ import Gray from "../Assets/gray.jpg";
 import anonymous from "../Assets/anonymous.png";
 import ImageSelectionModal from "../Components/Profile/ImageSelectionModal";
 import { useDispatch } from "react-redux";
-import { getProfile } from "../Redux/Slices/CurrentUserSlice";
+import {
+  getProfile,
+  updateUserAvatarUrl,
+  updateUserCoverUrl,
+} from "../Redux/Slices/CurrentUserSlice";
 import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { uploadAvatarApi, uploadCoverApi } from "../Apis/UserApi";
+import { updateAuthAvatarUrl } from "../Redux/Slices/AuthSlice";
 export default function ProfilePage({ unshowNavbar }) {
+  const dispatch = useDispatch();
   const [isEditInfoOpen, setIsEditInfoOpen] = useState(false);
   const [isAvatarSelectionOpen, setIsAvatarSelectionOpen] = useState(false);
   const [isCoverSelectionOpen, setIsCoverSelectionOpen] = useState(false);
   const { userId } = useParams();
-  const dispatch = useDispatch();
   const profile = useSelector((state) => state.currentUser.profile);
   const [avatarImage, setAvatarImage] = useState();
   const [coverImage, setCoverImage] = useState();
-
+  const handleUploadAvatar = async (file) => {
+    if (!file) return;
+    try {
+      const res = await uploadAvatarApi(file);
+      console.log(res);
+      dispatch(updateUserAvatarUrl(res.data.avatarUrl));
+      dispatch(updateAuthAvatarUrl(res.data.avatarUrl));
+    } catch (err) {}
+  };
+  const handleUploadCover = async (file) => {
+    if (!file) return;
+    try {
+      const res = await uploadCoverApi(file);
+      dispatch(updateUserCoverUrl(res.data.coverUrl));
+    } catch (err) {}
+  };
   const tabs = ["Posts", "About", "Photos", "Videos", "Friends", "Following"];
   const [activeTab, setActiveTab] = useState("Posts");
 
@@ -102,14 +123,8 @@ export default function ProfilePage({ unshowNavbar }) {
 
   const profilePhotos = Array(6).fill(avatarImage);
 
-  // Avatar handlers
-  const handleAvatarSelect = (url) => setAvatarImage(url);
-  const handleAvatarUpload = (data) => setAvatarImage(data);
   const handleDeleteAvatar = () => setAvatarImage("");
 
-  // Cover handlers
-  const handleCoverSelect = (url) => setCoverImage(url);
-  const handleCoverUpload = (data) => setCoverImage(data);
   const handleDeleteCover = () => setCoverImage("");
   useEffect(() => {
     if (userId) {
@@ -118,8 +133,8 @@ export default function ProfilePage({ unshowNavbar }) {
   }, [dispatch, userId]);
   useEffect(() => {
     if (profile) {
-      setAvatarImage(profile.avatar || "");
-      setCoverImage(profile.coverPhoto || "");
+      setAvatarImage(profile.avatarUrl || "");
+      setCoverImage(profile.coverUrl || "");
     }
   }, [profile]);
   return (
@@ -225,21 +240,21 @@ export default function ProfilePage({ unshowNavbar }) {
             <ImageSelectionModal
               isOpen={isAvatarSelectionOpen}
               onClose={() => setIsAvatarSelectionOpen(false)}
-              onSelectImage={handleAvatarSelect}
-              onUpload={handleAvatarUpload}
+              onUpload={handleUploadAvatar}
               onDelete={handleDeleteAvatar}
               title="Choose Profile Picture"
               showDelete={true}
+              type="avatar" // 👈 shows circle validation
             />
 
             <ImageSelectionModal
               isOpen={isCoverSelectionOpen}
               onClose={() => setIsCoverSelectionOpen(false)}
-              onSelectImage={handleCoverSelect}
-              onUpload={handleCoverUpload}
+              onUpload={handleUploadCover}
               onDelete={handleDeleteCover}
               title="Choose Cover Photo"
               showDelete={true}
+              type="cover" // 👈 shows rectangle opacity validation
             />
 
             {/* Tabs */}

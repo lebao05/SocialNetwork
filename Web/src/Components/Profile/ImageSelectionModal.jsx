@@ -1,40 +1,43 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Upload, Trash2, X } from "lucide-react";
 
 const ImageSelectionModal = ({
   isOpen,
   onClose,
-  onSelectImage,
   onUpload,
   onDelete,
   title,
   showDelete = false,
+  type = "avatar",
 }) => {
   const fileInputRef = useRef(null);
+  const [preview, setPreview] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null); // ✅ store File object
+
   if (!isOpen) return null;
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setSelectedFile(file); // save actual file
       const reader = new FileReader();
-      reader.onload = (e) => {
-        onUpload(e.target.result);
-        onClose();
-      };
+      reader.onload = (ev) => setPreview(ev.target.result); // show preview
       reader.readAsDataURL(file);
     }
   };
 
-  const sampleImages = [
-    "https://images.unsplash.com/photo-1494790108755-2616c6f027e4?w=300&h=300&fit=crop&crop=face",
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face",
-    "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop&crop=face",
-    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop&crop=face",
-  ];
+  const handleConfirm = () => {
+    if (selectedFile) {
+      onUpload(selectedFile); // send the File, not Base64
+      setSelectedFile(null);
+      setPreview(null);
+      onClose();
+    }
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-xl w-full mx-4">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">{title}</h2>
           <button
@@ -45,44 +48,67 @@ const ImageSelectionModal = ({
           </button>
         </div>
 
-        <div className="mb-6">
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 flex items-center justify-center gap-2"
-          >
-            <Upload className="h-5 w-5" />
-            Upload from device
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-        </div>
-
-        <h3 className="text-lg font-medium mb-3">Choose from gallery</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
-          {sampleImages.map((img, i) => (
-            <div
-              key={i}
-              onClick={() => {
-                onSelectImage(img);
-                onClose();
-              }}
-              className="aspect-square rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+        {!preview && (
+          <div className="mb-6">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 flex items-center justify-center gap-2"
             >
-              <img
-                src={img}
-                alt={`Sample ${i}`}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ))}
-        </div>
+              <Upload className="h-5 w-5" />
+              Upload from device
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </div>
+        )}
 
-        {showDelete && (
+        {preview && (
+          <div className="flex flex-col items-center mb-6">
+            {type === "avatar" ? (
+              <div className="relative w-48 h-48 rounded-full overflow-hidden">
+                <img
+                  src={preview}
+                  alt="Avatar preview"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 border-4 border-white rounded-full shadow-inner pointer-events-none"></div>
+              </div>
+            ) : (
+              <div className="relative w-full h-48 overflow-hidden">
+                <img
+                  src={preview}
+                  alt="Cover preview"
+                  className="w-full h-full object-cover opacity-90"
+                />
+              </div>
+            )}
+
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={handleConfirm}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  setPreview(null);
+                  setSelectedFile(null);
+                }}
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!preview && showDelete && (
           <button
             onClick={() => {
               onDelete();
