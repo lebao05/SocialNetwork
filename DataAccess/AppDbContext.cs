@@ -44,6 +44,11 @@ namespace DataAccess
         public DbSet<Education> Educations { get; set; }
 
         public DbSet<Work> Works { get; set; }
+        //Message and Conversation
+        public DbSet<Message> Messages { get; set; }
+        public DbSet<UserMessage> UserMessages { get; set; }
+        public DbSet<Conversation> Conversations { get; set; }
+        public DbSet<ConversationMember> ConversationMembers { get; set; }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder builder)
