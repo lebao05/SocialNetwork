@@ -1,4 +1,4 @@
-﻿namespace Api.Hubs
+﻿namespace Api.SignalR
 {
     public class NotificationHub
     {

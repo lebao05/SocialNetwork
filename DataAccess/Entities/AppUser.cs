@@ -47,5 +47,6 @@ namespace DataAccess.Entities
 
         public virtual ICollection<Work> Works { get; set; } = new List<Work>();
 
+        public virtual ICollection<ConversationMember> ConversationMembers { get; set; } = new List<ConversationMember>();
     }
 }
