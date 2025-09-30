@@ -4,14 +4,16 @@ namespace DataAccess.Entities
 {
     public class Message : BaseEntity, IBaseEntity
     {
-        public long ConversationId { get; set; }
+        public string ConversationId { get; set; }
         public Conversation Conversation { get; set; } = null!;
 
-        public long SenderId { get; set; }
+        public string SenderId { get; set; }
         public AppUser Sender { get; set; } = null!;
 
-        public string? Content { get; set; } 
-
+        public string? Content { get; set; }
+        public DateTime? EditedAt { get; set; }
+        public string? ReplyToMessageId { get; set; }
+        public Message? ReplyToMessage { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public ICollection<UserMessage> UserMessages { get; set; } = new List<UserMessage>();
     }

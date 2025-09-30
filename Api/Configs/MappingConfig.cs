@@ -22,6 +22,9 @@ namespace Api.Configs
             CreateMap<WorkDto, Work>().ReverseMap();
             CreateMap<EducationDto, Education>().ReverseMap();
 
+
+            
+
         }
     }
 }

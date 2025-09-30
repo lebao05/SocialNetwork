@@ -1,6 +1,8 @@
-﻿namespace DataAccess.Entities
+﻿using Helpers;
+
+namespace DataAccess.Entities
 {
-    public class ConversationMember
+    public class ConversationMember : BaseEntity, IBaseEntity
     {
         public string ConversationId { get; set; }
         public Conversation Conversation { get; set; } = null!;

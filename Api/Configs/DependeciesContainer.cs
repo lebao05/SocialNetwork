@@ -25,10 +25,17 @@ namespace Api.Configs
             services.AddScoped<IEducationRepo, EducationRepo>();
             services.AddScoped<IWorkRepo, WorkRepo>();
             services.AddScoped<IUserRepo, UserRepo>();
+            services.AddScoped<IConversationRepo, ConversationRepo>();
+            services.AddScoped<IMessageRepo, MessageRepo>();
+            services.AddScoped<IUserMessageRepo, UserMessageRepo>();
+            services.AddScoped<IConversationRepo, ConversationRepo>();
 
 
+            services.AddSignalR();
             //Helpers
             services.AddScoped<IGeneralRepo, GeneralRepo>();
+
+
         }
     }
 }
