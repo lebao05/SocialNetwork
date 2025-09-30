@@ -10,7 +10,7 @@ namespace DataAccess.Entities
         public string UserId { get; set; }
         public AppUser User { get; set; } = null!;
 
-        public GroupMemberRole Role { get; set; } = null!;
+        public string Role { get; set; } = string.Empty;
 
         public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
     }

@@ -1,7 +1,7 @@
 ﻿using DataAccess.Entities;
 namespace DataAccess.Repositories.Interfaces
 {
-    internal interface IConversationMemberRepo : IRepository<ConversationMember>
+    public interface IConversationMemberRepo : IRepository<ConversationMember>
     {
         Task<List<string>> GetUserConversationIdsAsync(string userId);
         Task<List<ConversationMember>> GetConversationMembersAsync(string conversationId);

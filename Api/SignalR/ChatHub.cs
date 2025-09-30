@@ -1,4 +1,5 @@
-﻿using BusinessLogic.Services.Interfaces;
+﻿using API.SignalR;
+using BusinessLogic.Services.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 
@@ -20,8 +21,6 @@ namespace Api.SignalR
             var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!string.IsNullOrEmpty(userId))
             {
-                await _chatService.UserConnected(userId, Context.ConnectionId);
-
                 // Join user's conversation groups
                 var conversationIds = await _chatService.GetUserConversationIds(userId);
                 foreach (var convId in conversationIds)
@@ -29,8 +28,6 @@ namespace Api.SignalR
                     await Groups.AddToGroupAsync(Context.ConnectionId, convId);
                 }
 
-                // Notify friends about online status
-                await Clients.Others.SendAsync("UserOnline", userId);
                 _logger.LogInformation($"User {userId} connected with ConnectionId: {Context.ConnectionId}");
             }
             await base.OnConnectedAsync();
@@ -38,7 +35,35 @@ namespace Api.SignalR
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
             var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                _logger.LogInformation($"User {userId} disconnected (ConnectionId: {Context.ConnectionId})");
+            }
             await base.OnDisconnectedAsync(exception);
+        }
+        public async Task SendMessage(SendMessageDto dto)
+        {
+            try
+            {
+                var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    throw new HubException("Unauthorized");
+                }
+
+                var message = await _chatService.SendMessageAsync(userId, dto);
+
+                // Send to all users in the conversation group
+                await Clients.Group(dto.ConversationId)
+                    .SendAsync("ReceiveMessage", message);
+
+                _logger.LogInformation($"Message sent to group {dto.ConversationId}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending message");
+                throw new HubException("Failed to send message");
+            }
         }
     }
 }

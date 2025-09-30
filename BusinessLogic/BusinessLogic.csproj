@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <Folder Include="DTOs\General\" />
-    <Folder Include="DTOs\Chat\" />
     <Folder Include="Utils\" />
   </ItemGroup>
 

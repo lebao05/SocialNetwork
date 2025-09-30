@@ -12,6 +12,7 @@ namespace DataAccess.Entities
 
         public string? Content { get; set; }
         public DateTime? EditedAt { get; set; }
+        public bool IsEdited { get; set; }
         public string? ReplyToMessageId { get; set; }
         public Message? ReplyToMessage { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
