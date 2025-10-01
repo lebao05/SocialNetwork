@@ -1,5 +1,6 @@
 ﻿using Api.Configs;
 using Api.Middlewares;
+using Api.SignalR;
 using DataAccess;
 using DataAccess.Entities;
 using DataAccess.Helpers;
@@ -147,11 +148,18 @@ if (app.Environment.IsDevelopment())
         options.RoutePrefix = string.Empty; // makes Swagger UI at root "/"
     });
 }
-app.UseHttpsRedirection();       // first
+try
+{
+    app.UseHttpsRedirection();
+}
+catch (Exception ex)
+{
+    Console.WriteLine("⚠️ HTTPS redirect disabled (cert issue): " + ex.Message);
+}
 app.UseCors("AllowLocalhost");   // before auth
 app.UseAuthentication();         // must be before authorization
 app.UseAuthorization();
-
+app.MapHub<ChatHub>("hubs/chat");
 app.MapControllers();
 
 app.Run();

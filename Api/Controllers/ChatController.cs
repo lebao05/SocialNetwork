@@ -1,8 +1,5 @@
 ﻿using BusinessLogic.DTOs.Chat;
 using BusinessLogic.Services.Interfaces;
-using DataAccess.Entities;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Errors;
 using Shared.Helpers;
@@ -57,7 +54,7 @@ namespace Api.Controllers
 
             if (!isMember)
             {
-               throw HttpResponseException(StatusCodes.Status403Forbidden, "You are not a member of this conversation.");
+               throw new HttpResponseException(StatusCodes.Status403Forbidden, "You are not a member of this conversation.");
             }
 
             var messages = await _chatService.GetConversationMessagesAsync(

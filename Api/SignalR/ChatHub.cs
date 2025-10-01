@@ -1,4 +1,4 @@
-﻿using API.SignalR;
+﻿using BusinessLogic.DTOs.Chat;
 using BusinessLogic.Services.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
@@ -15,7 +15,7 @@ namespace Api.SignalR
             _chatService = chatService;
             _logger = logger;
         }
-
+      
         public override async Task OnConnectedAsync()
         {
             var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;

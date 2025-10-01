@@ -132,7 +132,7 @@ namespace BusinessLogic.Services.Implementations
                 {
                     ConversationId = conversation.Id,
                     UserId = memberId,
-                    Role = "User",
+                    Role = "Member",
                     JoinedAt = DateTime.UtcNow
                 };
                 await _conversationMemberRepo.AddAsync(member);
@@ -216,21 +216,12 @@ namespace BusinessLogic.Services.Implementations
             // Get last message
             var lastMessage = await _messageRepo.GetLastMessageAsync(conv.Id);
 
-            // Get unread count for current user
-            var unreadCount = 0;
-            if (currentUserId != null)
-            {
-                unreadCount = await _messageRepo.GetUnreadCountAsync(conv.Id, currentUserId);
-            }
-
             // Map members
             var members = conv.Members.Select(m => new ConversationMemberDto
             {
                 UserId = m.UserId,
                 Name = $"{m.User.FirstName} {m.User.LastName}",
-                Avatar = m.User.AvatarUrl,
-                Role = m.Role.ToString(),
-                IsOnline = m.User.IsActive
+                Role = m.Role,
             }).ToList();
 
             return new ConversationResponseDto
@@ -247,7 +238,6 @@ namespace BusinessLogic.Services.Implementations
                     SenderName = $"{lastMessage.Sender.FirstName} {lastMessage.Sender.LastName}",
                     CreatedAt = lastMessage.CreatedAt
                 } : null,
-                UnreadCount = unreadCount,
                 Members = members
             };
         }

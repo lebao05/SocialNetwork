@@ -1,4 +1,6 @@
-﻿using BusinessLogic.Services.Implementations;
+﻿using Api.SignalR;
+using API.SignalR;
+using BusinessLogic.Services.Implementations;
 using BusinessLogic.Services.Interfaces;
 using DataAccess.Repositories.Implementations;
 using DataAccess.Repositories.Interfaces;
@@ -17,11 +19,13 @@ namespace Api.Configs
             services.AddScoped<IBlobService, BlobService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IFriendService, FriendService>();
-
+            services.AddScoped<IChatService, ChatService>();
+            services.AddSingleton<IPresenceTracker, PresenceTracker>();
 
             //Repositories
             services.AddScoped<IFriendShipRepo, FriendShipRepo>();
             services.AddScoped<IFriendReqRepo, FriendReqRepo>();
+            services.AddScoped<IEducationRepo, EducationRepo>();
             services.AddScoped<IEducationRepo, EducationRepo>();
             services.AddScoped<IWorkRepo, WorkRepo>();
             services.AddScoped<IUserRepo, UserRepo>();
@@ -29,7 +33,7 @@ namespace Api.Configs
             services.AddScoped<IMessageRepo, MessageRepo>();
             services.AddScoped<IUserMessageRepo, UserMessageRepo>();
             services.AddScoped<IConversationRepo, ConversationRepo>();
-
+            services.AddScoped<IConversationMemberRepo, ConversationMemberRepo>();
 
             services.AddSignalR();
             //Helpers

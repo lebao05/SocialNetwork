@@ -8,7 +8,6 @@
         public bool IsE2EE { get; set; }
         public DateTime CreatedAt { get; set; }
         public MessageResponseDto? LastMessage { get; set; }
-        public int UnreadCount { get; set; }
         public List<ConversationMemberDto> Members { get; set; } = new();
     }
 }
