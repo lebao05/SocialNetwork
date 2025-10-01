@@ -9,15 +9,19 @@ const HUB_URL = 'https://localhost:7056/hubs/chat';
 
 const ChatPageDemo = () => {
     const myAuth = useSelector(state => state.auth.user);
-    const currentUserId = myAuth?.id?.toString(); // ✅ get actual logged-in user id
+    const currentUserId = myAuth?.id?.toString();
 
     const connectionRef = useRef(null);
+    const messagesContainerRef = useRef(null);
+    const messagesEndRef = useRef(null);
+
     const [conversations, setConversations] = useState([]);
     const [messages, setMessages] = useState({});
+    const [pageTracker, setPageTracker] = useState({});
+    const [hasMore, setHasMore] = useState({});
     const [selectedConversation, setSelectedConversation] = useState(null);
     const [messageInput, setMessageInput] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
-    const messagesEndRef = useRef(null);
 
     // ----------------- SignalR Connection -----------------
     useEffect(() => {
@@ -25,7 +29,7 @@ const ChatPageDemo = () => {
             .withUrl(HUB_URL, {
                 skipNegotiation: true,
                 transport: signalR.HttpTransportType.WebSockets,
-                withCredentials: true // ✅ Important for cookie auth
+                withCredentials: true
             })
             .withAutomaticReconnect()
             .configureLogging(signalR.LogLevel.Information)
@@ -33,8 +37,7 @@ const ChatPageDemo = () => {
 
         connectionRef.current = connection;
 
-        connection.start()
-            .catch(err => console.error('SignalR connection error:', err));
+        connection.start().catch(err => console.error('SignalR connection error:', err));
 
         connection.on('ReceiveMessage', (message) => {
             setMessages(prev => ({
@@ -48,7 +51,13 @@ const ChatPageDemo = () => {
                     : conv
             ));
 
-            setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+            // Scroll only if user is at the bottom
+            setTimeout(() => {
+                const container = messagesContainerRef.current;
+                if (container && container.scrollHeight - container.scrollTop - container.clientHeight < 50) {
+                    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                }
+            }, 100);
         });
 
         return () => {
@@ -74,29 +83,57 @@ const ChatPageDemo = () => {
         fetchConversations();
     }, []);
 
-    // ----------------- Fetch Messages When Conversation Selected -----------------
+    // ----------------- Fetch Messages -----------------
+    const fetchMessages = async (conversationId, page = 1, append = false) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/chat/conversations/${conversationId}/messages?page=${page}&pageSize=15`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            const newMessages = data.data || [];
+
+            setMessages(prev => ({
+                ...prev,
+                [conversationId]: append
+                    ? [...newMessages, ...(prev[conversationId] || [])] // prepend older
+                    : newMessages
+            }));
+
+            setPageTracker(prev => ({ ...prev, [conversationId]: page }));
+            setHasMore(prev => ({ ...prev, [conversationId]: newMessages.length > 0 }));
+        } catch (err) {
+            console.error('Failed to fetch messages:', err);
+        }
+    };
+
+    // ----------------- On Conversation Select -----------------
     useEffect(() => {
         if (!selectedConversation) return;
-
-        const fetchMessages = async () => {
-            try {
-                const res = await fetch(`${API_BASE_URL}/chat/conversations/${selectedConversation.id}/messages?page=1&pageSize=50`, {
-                    method: 'GET',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                const data = await res.json();
-                setMessages(prev => ({
-                    ...prev,
-                    [selectedConversation.id]: data.data || []
-                }));
-            } catch (err) {
-                console.error('Failed to fetch messages:', err);
-            }
-        };
-
-        fetchMessages();
+        fetchMessages(selectedConversation.id, 1, false).then(() => {
+            // Scroll to bottom on initial load
+            setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 100);
+        });
     }, [selectedConversation]);
+
+    // ----------------- Infinite Scroll (Lazy Load Older) -----------------
+    const handleScroll = () => {
+        const container = messagesContainerRef.current;
+        if (!container || !selectedConversation) return;
+
+        if (container.scrollTop === 0 && hasMore[selectedConversation.id]) {
+            const nextPage = (pageTracker[selectedConversation.id] || 1) + 1;
+
+            const prevHeight = container.scrollHeight;
+
+            fetchMessages(selectedConversation.id, nextPage, true).then(() => {
+                // Keep scroll at same position after new messages prepend
+                const newHeight = container.scrollHeight;
+                container.scrollTop = newHeight - prevHeight;
+            });
+        }
+    };
 
     // ----------------- Send Message -----------------
     const sendMessage = async () => {
@@ -110,6 +147,8 @@ const ChatPageDemo = () => {
         try {
             await connectionRef.current.invoke("SendMessage", newMessage);
             setMessageInput("");
+            // Scroll to bottom after sending
+            setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
         } catch (err) {
             console.error("Failed to send message via SignalR:", err);
         }
@@ -126,15 +165,12 @@ const ChatPageDemo = () => {
         getConversationName(conv).toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, selectedConversation]);
-
     // ----------------- JSX Render -----------------
     return (
         <div className="flex h-screen bg-gray-50">
             {/* Sidebar */}
             <div className="w-96 bg-white border-r border-gray-200 flex flex-col">
+                {/* Header */}
                 <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xl">
@@ -151,6 +187,7 @@ const ChatPageDemo = () => {
                     </div>
                 </div>
 
+                {/* Search */}
                 <div className="relative mb-3 p-4">
                     <Search className="absolute left-6 top-3 w-5 h-5 text-gray-400" />
                     <input
@@ -162,6 +199,7 @@ const ChatPageDemo = () => {
                     />
                 </div>
 
+                {/* Conversation List */}
                 <div className="flex-1 overflow-y-auto">
                     {filteredConversations.map(conv => (
                         <div key={conv.id} onClick={() => setSelectedConversation(conv)}
@@ -190,6 +228,7 @@ const ChatPageDemo = () => {
             <div className="flex-1 flex flex-col">
                 {selectedConversation ? (
                     <>
+                        {/* Chat Header */}
                         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-blue-400 rounded-full flex items-center justify-center text-white">
@@ -206,7 +245,13 @@ const ChatPageDemo = () => {
                                 <MoreVertical className="w-5 h-5 text-gray-600" />
                             </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+
+                        {/* Messages */}
+                        <div
+                            ref={messagesContainerRef}
+                            onScroll={handleScroll}
+                            className="flex-1 overflow-y-auto p-4 flex flex-col gap-2"
+                        >
                             {(messages[selectedConversation.id] || []).map(msg => {
                                 const isMine = msg.senderId?.toString() === currentUserId?.toString();
                                 return (
@@ -229,7 +274,7 @@ const ChatPageDemo = () => {
                             <div ref={messagesEndRef}></div>
                         </div>
 
-                        {/* Message Input */}
+                        {/* Input */}
                         <div className="p-4 border-t border-gray-200 flex gap-2 items-center">
                             <Paperclip className="w-5 h-5 text-gray-500 cursor-pointer" />
                             <Smile className="w-5 h-5 text-gray-500 cursor-pointer" />
