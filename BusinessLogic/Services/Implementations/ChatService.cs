@@ -4,6 +4,7 @@ using DataAccess;
 using DataAccess.Entities;
 using DataAccess.Repositories.Interfaces;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace BusinessLogic.Services.Implementations
 {
@@ -149,14 +150,48 @@ namespace BusinessLogic.Services.Implementations
         {
             var conversations = await _conversationRepo.GetUserConversationsAsync(userId);
 
-            var result = new List<ConversationResponseDto>();
-            foreach (var conv in conversations)
+            var result = conversations.Select(conv =>
             {
-                result.Add(await MapToConversationDto(conv, userId));
-            }
+                string? pictureUrl = conv.IsGroup
+                    ? conv.PictureUrl 
+                    : conv.Members
+                          .FirstOrDefault(m => m.UserId != userId)?
+                          .User.AvatarUrl; 
+                return new ConversationResponseDto
+                {
+                    Id = conv.Id,
+                    Name = conv.IsGroup
+                    ? conv.Name
+                    : conv.Members
+                          .FirstOrDefault(m => m.UserId != userId) is { User: var otherUser }
+                              ? $"{otherUser.FirstName} {otherUser.LastName}"
+                              : "Unknown",
+                    IsGroup = conv.IsGroup,
+                    IsE2EE = conv.IsE2EE,
+                    PictureUrl = pictureUrl,
+                    CreatedAt = conv.CreatedAt,
+                    Members = conv.Members.Select(m => new ConversationMemberDto
+                    {
+                        UserId = m.UserId,
+                        Name = $"{m.User.FirstName} {m.User.LastName}",
+                        Role = m.Role,
+                    }).ToList(),
+                    LastMessage = conv.Messages
+                        .OrderByDescending(m => m.CreatedAt)
+                        .Select(m => new MessageResponseDto
+                        {
+                            Id = m.Id,
+                            Content = m.Content,
+                            SenderName = $"{m.Sender.FirstName} {m.Sender.LastName}",
+                            CreatedAt = m.CreatedAt
+                        })
+                        .FirstOrDefault()
+                };
+            }).ToList();
 
             return result;
         }
+
 
         public async Task<List<MessageResponseDto>> GetConversationMessagesAsync(string conversationId, int page = 1, int pageSize = 50)
         {

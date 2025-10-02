@@ -1,4 +1,5 @@
-﻿using DataAccess.Entities;
+﻿using BusinessLogic.DTOs.Friend;
+using DataAccess.Entities;
 
 namespace BusinessLogic.Services.Interfaces
 {
@@ -8,7 +9,7 @@ namespace BusinessLogic.Services.Interfaces
         Task<FriendShip> AcceptFriendRequestAsync(string requestId, string userId);
         Task<bool> DeleteFriendRequestAsync(string requestId, string userId);
         Task<bool> DeleteFriendAsync(string userId1, string userId2);
-        Task<List<FriendShip>> GetFriendsAsync(string userId);
+        Task<List<FriendShipDto>> GetFriendsAsync(string userId);
         Task<List<FriendRequest>> GetFriendRequestsAsync(string userId);
     }
 }

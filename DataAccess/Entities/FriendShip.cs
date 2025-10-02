@@ -17,6 +17,8 @@ namespace DataAccess.Entities
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+        public string? ConvervationId { get; set; } // Nullable for future use
+
         [ForeignKey("RequesterId")]
         public virtual AppUser Requester { get; set; }
 

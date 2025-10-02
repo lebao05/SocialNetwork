@@ -12,7 +12,6 @@ import { GetMe } from "./Redux/Slices/AuthSlice";
 import ProtectedRoute from "./Components/Security/ProtectedRoute";
 import FriendPage from "./Pages/FriendPage";
 import ChatPage from "./Pages/ChatPage";
-import ChatPageDemo from "./Pages/ChatPageDemo";
 function App() {
   const dispatch = useDispatch();
   useEffect(() => {
@@ -83,7 +82,7 @@ function App() {
             path="/chat"
             element={
               <ProtectedRoute user={user}>
-                <ChatPageDemo />
+                <ChatPage />
               </ProtectedRoute>
             }
           />

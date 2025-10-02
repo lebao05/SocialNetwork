@@ -1,6 +1,10 @@
-﻿using BusinessLogic.Services.Interfaces;
+﻿using AutoMapper;
+using BusinessLogic.DTOs.Friend;
+using BusinessLogic.DTOs.User;
+using BusinessLogic.Services.Interfaces;
 using DataAccess.Entities;
 using DataAccess.Repositories.Interfaces;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Shared.Errors;
 
 namespace BusinessLogic.Services.Implementations
@@ -9,8 +13,14 @@ namespace BusinessLogic.Services.Implementations
     {
         private readonly IFriendReqRepo _friendReqRepo;
         private readonly IFriendShipRepo _friendShipRepo;
-        public FriendService(IFriendShipRepo friendshipRepo, IFriendReqRepo friendreqRepo)
+        private readonly IMapper _mapper;
+        public FriendService(
+            IFriendShipRepo friendshipRepo, 
+            IFriendReqRepo friendreqRepo,
+            IMapper mapper
+            )
         {
+            _mapper = mapper;
             _friendReqRepo = friendreqRepo;
             _friendShipRepo = friendshipRepo;
         }
@@ -87,15 +97,26 @@ namespace BusinessLogic.Services.Implementations
 
             return await _friendShipRepo.DeleteAsync(friendship);
         }
-        public async Task<List<FriendShip>> GetFriendsAsync(string userId)
+        public async Task<List<FriendShipDto>> GetFriendsAsync(string userId)
         {
             var friendships = await _friendShipRepo.GetFriendWithUser(userId
             );
-            return friendships;
+            var list = friendships.Select(
+                f => new FriendShipDto
+                {
+                    Id = f.Id,
+                    Friend = f.RequesterId == userId 
+                    ? _mapper.Map<UserDto>(f.Addressee) 
+                    :
+                    _mapper.Map<UserDto>(f.Requester),
+                }).ToList();
+       
+            return list;
         }
         public async Task<List<FriendRequest>> GetFriendRequestsAsync(string userId)
         {
             var requests = await _friendReqRepo.GetFriendRequestWithUser(userId);
+
             return requests;
         }
     }

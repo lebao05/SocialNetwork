@@ -7,6 +7,7 @@ namespace DataAccess.Entities
         public string? Name { get; set; } // Nullable for 1-on-1 chats
         public bool IsGroup { get; set; } = false;
         public bool IsE2EE { get; set; } = false; // End-to-end encrypted flag
+        public string? PictureUrl { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public string CreatorId { get; set; }
         public AppUser Creator { get; set; } = null!;

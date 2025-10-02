@@ -7,8 +7,7 @@ namespace BusinessLogic.DTOs.Friend
     public class FriendShipDto
     {
         public string Id { get; set; }
-        public string RequesterId { get; set; }
-        public string AddresseeId { get; set; }
-        public UserDto Addressee { get; set; }
+        public string ConversationId { get; set; }
+        public UserDto Friend { get; set; }
     }
 }
