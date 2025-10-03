@@ -1,12 +1,13 @@
 import React from "react";
 import { Phone, Video, MoreVertical } from "lucide-react";
-
+import group from "../../assets/group.png"
+import anonymous from "../../assets/anonymous.png"
 const ChatHeader = ({ selectedConversation }) => {
     return (
         <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-white">
             <div className="flex items-center">
                 <img
-                    src={selectedConversation.avatarUrl || "/default-avatar.png"}
+                    src={selectedConversation.avatarUrl || selectedConversation.isGroup ? group : anonymous}
                     alt={selectedConversation.name}
                     className="w-10 h-10 rounded-full mr-3"
                 />

@@ -1,5 +1,6 @@
 import React from "react";
 import group from "../../assets/group.png"
+import anonymous from "../../assets/anonymous.png"
 const ConversationItem = ({ conversation, isSelected, onSelect }) => {
     return (
         <div
@@ -8,7 +9,13 @@ const ConversationItem = ({ conversation, isSelected, onSelect }) => {
                 }`}
         >
             <img
-                src={conversation.avatarUrl || group}
+                src={
+                    conversation.pictureUrl
+                        ? conversation.pictureUrl
+                        : conversation.isGroup
+                            ? group
+                            : anonymous
+                }
                 alt={conversation.name}
                 className="w-10 h-10 rounded-full mr-3"
             />

@@ -9,11 +9,12 @@ import {
   Group,
   User,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import logo from "../../assets/logo.png";
 import anonymous from "../../assets/anonymous.png";
 export default function Navbar() {
+  const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
   const nagivate = useNavigate();
   return (
@@ -55,7 +56,8 @@ export default function Navbar() {
 
       {/* Right: Messages, Notifications, Avatar */}
       <div className="flex items-center space-x-3">
-        <button className="hover:bg-gray-100 p-2 rounded-full ">
+        <button
+          onClick={() => navigate('/chat')} className="hover:bg-gray-100 cursor-pointer p-2 rounded-full ">
           <MessageSquare className="w-5 h-5 text-gray-700" />
         </button>
         <button className="hover:bg-gray-100 p-2 rounded-full">

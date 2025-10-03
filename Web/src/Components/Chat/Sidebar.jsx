@@ -1,4 +1,3 @@
-import React from "react";
 import ConversationList from "./ConversationList";
 import anonymous from "../../assets/anonymous.png"
 const Sidebar = ({
@@ -56,7 +55,8 @@ const Sidebar = ({
                                 setSelectedConversation({
                                     id: `friend-${friend.friend.id}`, // purely UI
                                     isGroup: false,
-                                    isVirtual: true, // mark this is not from backend
+                                    isVirtual: true, // mark this is not from backend                                    , pictureUrl:friend.friend.avatarUrl,
+                                    pictureUrl: friend.friend?.avatarUrl,
                                     name: `${friend.friend.firstName} ${friend.friend.lastName}`,
                                     members: [
                                         {
@@ -73,7 +73,7 @@ const Sidebar = ({
                             className="flex items-center gap-3 p-3 hover:bg-gray-100 cursor-pointer"
                         >
                             <img
-                                src={friend.friend.avatarUrl || "/default-avatar.png"}
+                                src={friend.friend.avatarUrl || anonymous}
                                 alt="avatar"
                                 className="w-10 h-10 rounded-full"
                             />

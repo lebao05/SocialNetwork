@@ -24,3 +24,20 @@ export async function fetchMessages(conversationId, page = 1, pageSize = 10) {
         throw err;
     }
 }
+export const createConversationApi = async (dto) => {
+    try {
+        const response = await axios.post(
+            "/chat/conversations", // adjust base URL if needed
+            dto,
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+        return response.data; 
+    } catch (error) {
+        console.error("Create conversation API failed:", error);
+        throw error;
+    }
+};

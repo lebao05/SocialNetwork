@@ -17,7 +17,8 @@ namespace DataAccess.Repositories.Implementations
             return await _context.Conversations
                 .Include(c => c.Members)
                     .ThenInclude(m => m.User)
-                .Include(c => c.Creator)
+                .Include(c => c.Messages.OrderByDescending(m => m.CreatedAt).Take(1))
+                .ThenInclude(m => m.Sender)
                 .FirstOrDefaultAsync(c => c.Id == conversationId && !c.Deleted);
         }
 
@@ -32,12 +33,35 @@ namespace DataAccess.Repositories.Implementations
                 .OrderByDescending(c => c.Messages.Max(m => (DateTime?)m.CreatedAt) ?? c.CreatedAt)
                 .ToListAsync();
         }
+        public async Task<Conversation> GetUserConversationAsync(string conversationId)
+        {
+            var conversation = await _context.Conversations
+                .Include(c => c.Members)
+                    .ThenInclude(m => m.User)
+                .Include(c => c.Messages)
+                    .ThenInclude(m => m.Sender)
+                .FirstOrDefaultAsync(c => c.Id == conversationId && !c.Deleted);
+
+            if (conversation == null)
+                return null;
+
+            // Optionally, keep only the last message
+            conversation.Messages = conversation.Messages
+                .OrderByDescending(m => m.CreatedAt)
+                .Take(1)
+                .ToList();
+
+            return conversation;
+        }
 
         public async Task<Conversation?> FindOneOnOneConversationAsync(string userId1, string userId2)
         {
             return await _context.Conversations
                 .Include(c => c.Members)
-                .Where(c => !c.IsGroup && !c.Deleted && c.Members.Count == 2)
+                    .ThenInclude(m => m.User)
+                .Include(c => c.Messages.OrderByDescending(m => m.CreatedAt).Take(1))
+                .ThenInclude(m => m.Sender)
+                .Where(c => !c.IsGroup && !c.Deleted)
                 .FirstOrDefaultAsync(c =>
                     c.Members.Any(m => m.UserId == userId1) &&
                     c.Members.Any(m => m.UserId == userId2));

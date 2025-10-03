@@ -1,6 +1,7 @@
 ﻿using BusinessLogic.DTOs.Chat;
 using BusinessLogic.Services.Interfaces;
 using Microsoft.AspNetCore.SignalR;
+using Shared.Errors;
 using System.Security.Claims;
 
 namespace Api.SignalR
@@ -9,13 +10,14 @@ namespace Api.SignalR
     {
         private readonly IChatService _chatService;
         private readonly ILogger<ChatHub> _logger;
-
-        public ChatHub(IChatService chatService, ILogger<ChatHub> logger)
+        private readonly IPresenceTracker _presenceTracker;
+        public ChatHub(IChatService chatService, ILogger<ChatHub> logger, IPresenceTracker presenceTracker)
         {
             _chatService = chatService;
             _logger = logger;
+            _presenceTracker = presenceTracker;
         }
-      
+
         public override async Task OnConnectedAsync()
         {
             var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -30,6 +32,7 @@ namespace Api.SignalR
 
                 _logger.LogInformation($"User {userId} connected with ConnectionId: {Context.ConnectionId}");
             }
+            _presenceTracker.UserConnected(userId, Context.ConnectionId);
             await base.OnConnectedAsync();
         }
         public override async Task OnDisconnectedAsync(Exception? exception)
@@ -39,6 +42,7 @@ namespace Api.SignalR
             {
                 _logger.LogInformation($"User {userId} disconnected (ConnectionId: {Context.ConnectionId})");
             }
+            _presenceTracker.UserDisconnected(userId, Context.ConnectionId);
             await base.OnDisconnectedAsync(exception);
         }
         public async Task SendMessage(SendMessageDto dto)
@@ -56,14 +60,26 @@ namespace Api.SignalR
                 // Send to all users in the conversation group
                 await Clients.Group(dto.ConversationId)
                     .SendAsync("ReceiveMessage", message);
-
-                _logger.LogInformation($"Message sent to group {dto.ConversationId}");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending message");
                 throw new HubException("Failed to send message");
             }
         }
+        //public async Task<ConversationResponseDto> JoinConvervation(string conversationId)
+        //{
+        //    var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //    if (string.IsNullOrEmpty(userId))
+        //    {
+        //        throw new HubException("Unauthorized");
+        //    }
+        //    var isMember = await _chatService.IsConversationMember(conversationId, userId);
+        //    if (!isMember)
+        //    {
+        //        throw new HubException("You are not a member of this conversation");
+        //    }
+        //    await Groups.AddToGroupAsync(Context.ConnectionId, conversationId);
+        //    _logger.LogInformation($"User {userId} joined group {conversationId}");
+        //}
     }
 }

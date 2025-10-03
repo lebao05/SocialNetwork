@@ -4,6 +4,7 @@ using DataAccess;
 using DataAccess.Entities;
 using DataAccess.Repositories.Interfaces;
 using Microsoft.Extensions.Logging;
+using Shared.Errors;
 using System.Linq;
 
 namespace BusinessLogic.Services.Implementations
@@ -72,9 +73,6 @@ namespace BusinessLogic.Services.Implementations
 
             // Get sender details
             var sender = members.FirstOrDefault(m => m.UserId == userId)?.User;
-
-            _logger.LogInformation($"Message {message.Id} sent by {userId} in conversation {dto.ConversationId}");
-
             return new MessageResponseDto
             {
                 Id = message.Id,
@@ -98,7 +96,6 @@ namespace BusinessLogic.Services.Implementations
 
                 if (existing != null)
                 {
-                    _logger.LogInformation($"Returning existing conversation {existing.Id} for users {creatorId} and {otherUserId}");
                     return await MapToConversationDto(existing, creatorId);
                 }
             }
@@ -138,10 +135,6 @@ namespace BusinessLogic.Services.Implementations
                 };
                 await _conversationMemberRepo.AddAsync(member);
             }
-
-            _logger.LogInformation($"Conversation {conversation.Id} created by {creatorId} with {dto.MemberIds.Count} members");
-
-            // Reload conversation with members
             var createdConversation = await _conversationRepo.GetConversationWithMembersAsync(conversation.Id);
             return await MapToConversationDto(createdConversation!, creatorId);
         }
@@ -191,8 +184,6 @@ namespace BusinessLogic.Services.Implementations
 
             return result;
         }
-
-
         public async Task<List<MessageResponseDto>> GetConversationMessagesAsync(string conversationId, int page = 1, int pageSize = 50)
         {
             var messages = await _messageRepo.GetConversationMessagesAsync(conversationId, page, pageSize);
@@ -209,7 +200,20 @@ namespace BusinessLogic.Services.Implementations
                 IsEdited = m.IsEdited,
             }).Reverse().ToList();
         }
-
+        public async Task<ConversationResponseDto> GetConversationByIdAsync(string conversationId, string userId)
+        {
+            var conversation = await _conversationRepo.GetConversationWithMembersAsync(conversationId);
+            if (conversation == null)
+            {
+                throw new HttpResponseException(400, "Conversation not found");
+            }
+            var isMember = conversation.Members.Any(m => m.UserId == userId);
+            if (!isMember)
+            {
+                throw new HttpResponseException(401,"User is not a member of this conversation");
+            }
+            return await MapToConversationDto(conversation, userId);
+        }
         public async Task<bool> IsConversationMember(string conversationId, string userId)
         {
             return await _conversationMemberRepo.IsMemberAsync(conversationId, userId);
@@ -234,14 +238,12 @@ namespace BusinessLogic.Services.Implementations
                 // Sender can delete for everyone
                 userMessage.Message.Deleted = true;
                 await _messageRepo.UpdateAsync(userMessage.Message);
-                _logger.LogInformation($"Message {messageId} deleted for everyone by sender {userId}");
             }
             else
             {
                 // Others can only delete for themselves
                 userMessage.DeleteAt = DateTime.UtcNow;
                 await _userMessageRepo.UpdateAsync(userMessage);
-                _logger.LogInformation($"Message {messageId} deleted for user {userId}");
             }
         }
 

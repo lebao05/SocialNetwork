@@ -22,11 +22,16 @@ builder.Services.AddDependencies(builder.Configuration);
 builder.Services.AddDependencies(builder.Configuration);
 // Add services to the container.
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    //.WriteTo.File("Logs/log.txt", rollingInterval: RollingInterval.Day) 
+    .MinimumLevel.Debug() // keep your own debug logs
+    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", Serilog.Events.LogEventLevel.Error) // hide SQL queries
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore.ChangeTracking", Serilog.Events.LogEventLevel.Error) // hide tracking spam
     .Enrich.FromLogContext()
-    .MinimumLevel.Debug() // control minimum log level
+    .WriteTo.Console()
+    //.WriteTo.File("Logs/log.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
+
 
 // Replace default .NET logger
 builder.Host.UseSerilog();

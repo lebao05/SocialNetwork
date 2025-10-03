@@ -13,5 +13,6 @@ namespace DataAccess.Repositories.Interfaces
         Task<List<Conversation>> GetUserConversationsAsync(string userId);
         Task<Conversation?> FindOneOnOneConversationAsync(string userId1, string userId2);
         Task<bool> IsUserMemberAsync(string conversationId, string userId);
+        Task<Conversation> GetUserConversationAsync(string conversationId);
     }
 }
