@@ -1,11 +1,13 @@
 ﻿using Api.SignalR;
 using BusinessLogic.DTOs.Chat;
 using BusinessLogic.Services.Interfaces;
+using DataAccess;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Shared.Errors;
 using Shared.Helpers;
 using System.Security.Claims;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Api.Controllers
 {
@@ -14,9 +16,10 @@ namespace Api.Controllers
     public class ChatController : ControllerBase
     {
         private readonly IChatService _chatService;
-
-        public ChatController(IChatService chatService)
+        private readonly AppDbContext _context;
+        public ChatController(IChatService chatService,AppDbContext context)
         {
+            _context = context;
             _chatService = chatService;
         }
 
@@ -34,6 +37,7 @@ namespace Api.Controllers
         {
             var userId = GetUserId();
             var result = await _chatService.CreateConversationAsync(userId, dto);
+            dto.MemberIds.Add(userId);
             foreach (var memberId in dto.MemberIds)
             {
                 var connections = await presenceTracker.GetConnectionsForUser(memberId);
@@ -44,20 +48,32 @@ namespace Api.Controllers
             }
             return Ok(new ApiResponse(200, "Successfully", result));
         }
+        [HttpDelete("conversations/{id}")]
+        public async Task<ActionResult> DeleteConversation(string id)
+        {
+            var conversation = await _context.Conversations.FindAsync(id);
+            if (conversation == null)
+                return NotFound(new ApiResponse(404, "Conversation not found", null));
 
+            // Soft delete
+            conversation.Deleted = true;
+
+            // Save changes
+            await _context.SaveChangesAsync();
+
+            return Ok(new ApiResponse(200, "Successfully deleted", null));
+        }
+        [HttpGet("conversations/{id}")]
+        public async Task<ActionResult> GetConversation(string id)
+        {
+            var conversation = await _chatService.GetConversationByIdAsync(id, GetUserId());
+            return Ok(new ApiResponse(200, "Successfully deleted", conversation));
+        }
         [HttpGet("conversations")]
         public async Task<ActionResult<List<ConversationResponseDto>>> GetConversations()
         {
             var userId = GetUserId();
             var conversations = await _chatService.GetUserConversationsAsync(userId);
-            return Ok(new ApiResponse(200, "Successfully", conversations));
-
-        }
-        [HttpGet("conversations/{id}")]
-        public async Task<ActionResult<List<ConversationResponseDto>>> GetConversation(string id)
-        {
-            var userId = GetUserId();
-            var conversations = await _chatService.GetConversationByIdAsync(id,userId);
             return Ok(new ApiResponse(200, "Successfully", conversations));
 
         }

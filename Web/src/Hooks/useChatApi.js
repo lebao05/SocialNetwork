@@ -39,11 +39,10 @@ export function useChatApi(onReceiveMessage) {
             }
             console.log("Received:", message);
         });
-
         return () => {
             connection.stop();
         };
-    }, []); // ✅ only run once
+    }, []);
 
     const sendMessage = async (message) => {
         if (!connectionRef.current) return;
@@ -53,6 +52,5 @@ export function useChatApi(onReceiveMessage) {
             console.error("Failed to send message:", err);
         }
     };
-
     return { sendMessage, isConnected };
 }

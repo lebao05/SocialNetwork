@@ -32,7 +32,11 @@ namespace Api.SignalR
 
                 _logger.LogInformation($"User {userId} connected with ConnectionId: {Context.ConnectionId}");
             }
-            _presenceTracker.UserConnected(userId, Context.ConnectionId);
+            bool isOnline = await _presenceTracker.UserConnected(userId, Context.ConnectionId);
+            if( isOnline )
+            {
+                await Clients.Others.SendAsync("UserIsOnline", userId);
+            }
             await base.OnConnectedAsync();
         }
         public override async Task OnDisconnectedAsync(Exception? exception)
@@ -42,7 +46,11 @@ namespace Api.SignalR
             {
                 _logger.LogInformation($"User {userId} disconnected (ConnectionId: {Context.ConnectionId})");
             }
-            _presenceTracker.UserDisconnected(userId, Context.ConnectionId);
+            bool isOnline = await _presenceTracker.UserDisconnected(userId, Context.ConnectionId);
+            if (isOnline)
+            {
+                await Clients.Others.SendAsync("UserIsOnline", userId);
+            }
             await base.OnDisconnectedAsync(exception);
         }
         public async Task SendMessage(SendMessageDto dto)
