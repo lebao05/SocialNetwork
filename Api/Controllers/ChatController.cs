@@ -2,10 +2,15 @@
 using BusinessLogic.DTOs.Chat;
 using BusinessLogic.Services.Interfaces;
 using DataAccess;
+using DataAccess.Entities;
+using DataAccess.Repositories.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
+using Shared.Configs;
 using Shared.Errors;
 using Shared.Helpers;
+using Shared.Services.Interfaces;
 using System.Security.Claims;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
@@ -17,10 +22,21 @@ namespace Api.Controllers
     {
         private readonly IChatService _chatService;
         private readonly AppDbContext _context;
-        public ChatController(IChatService chatService,AppDbContext context)
+        private readonly AzureStorageOptions _options;
+        private readonly IBlobService _blobService;
+        private readonly IMessageAttachmentRepo _messageAttachmentRepo;
+        public ChatController(
+            IChatService chatService, 
+            AppDbContext context, 
+            IOptions<AzureStorageOptions> options,
+            IBlobService blobservice,
+            IMessageAttachmentRepo messageAttachmentRepo)
         {
             _context = context;
             _chatService = chatService;
+            _options = options.Value;
+            _blobService = blobservice;
+            _messageAttachmentRepo = messageAttachmentRepo;
         }
 
         private string GetUserId()
@@ -88,12 +104,33 @@ namespace Api.Controllers
 
             if (!isMember)
             {
-               throw new HttpResponseException(StatusCodes.Status403Forbidden, "You are not a member of this conversation.");
+                throw new HttpResponseException(StatusCodes.Status403Forbidden, "You are not a member of this conversation.");
             }
 
             var messages = await _chatService.GetConversationMessagesAsync(
                 conversationId, page, pageSize);
             return Ok(new ApiResponse(200, "Successfully", messages));
         }
+        [HttpGet("convesations/get-sas-upload")]
+        public async Task<ActionResult> GetSasUpload([FromBody] string fileName)
+        {
+            var userId = GetUserId();
+            if( User == null )
+                return Unauthorized(new ApiResponse(401, "Unauthorized", null));
+            var blobname = $"{Guid.NewGuid()}{Path.GetExtension(fileName)}";
+            var sasUrl = _blobService.GenerateUploadSasUrl(
+                _options.ConversationContainer, blobname, 10);
+            var uri = new Uri(sasUrl);
+            var blobUrl = uri.GetLeftPart(UriPartial.Path); // removes query string
+            string currentUserId = userId;
+            var attachment = await _messageAttachmentRepo.AddAsync(new MessageAttachment
+            {
+                BlobUrl =  blobUrl,
+                UserId = currentUserId,
+                CreatedAt = DateTime.UtcNow
+            });
+            return Ok(new ApiResponse(200, "Successfully", new{ sasUrl = sasUrl, blobname = blobname }));
+        }
+
     }
 }

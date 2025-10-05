@@ -99,7 +99,15 @@ namespace DataAccess.Repositories.Implementations
             var entity = await _context.Set<TEntity>().FindAsync(id);
             return entity;
         }
+        public async Task<List<TEntity>> AddRangeAsync(IEnumerable<TEntity> entities)
+        {
+            if (entities == null || !entities.Any()) return new List<TEntity>();
 
+            object value = await await _context.Set<TEntity>().AddRangeAsync(entities);
+            await _context.SaveChangesAsync();
+
+            return entities.ToList();
+        }
 
     }
 }

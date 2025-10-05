@@ -15,6 +15,7 @@ namespace BusinessLogic.Services.Implementations
         private readonly IMessageRepo _messageRepo;
         private readonly IUserMessageRepo _userMessageRepo;
         private readonly IConversationMemberRepo _conversationMemberRepo;
+        private readonly IMessageAttachmentRepo _messageAttachmentRepo;
         private readonly ILogger<ChatService> _logger; 
         public ChatService(
             IConversationRepo conversationRepo,
@@ -22,13 +23,15 @@ namespace BusinessLogic.Services.Implementations
             IUserMessageRepo userMessageRepo,
             IConversationMemberRepo conversationMemberRepo,
             AppDbContext context,
-            ILogger<ChatService> logger)
+            ILogger<ChatService> logger,
+            IMessageAttachmentRepo messageAttachmentRepo)
         {
             _conversationRepo = conversationRepo;
             _messageRepo = messageRepo;
             _userMessageRepo = userMessageRepo;
             _conversationMemberRepo = conversationMemberRepo;
             _logger = logger;
+            _messageAttachmentRepo = messageAttachmentRepo;
         }
         public async Task<MessageResponseDto> SendMessageAsync(string userId, SendMessageDto dto)
         {
@@ -59,7 +62,17 @@ namespace BusinessLogic.Services.Implementations
             };
 
             await _messageRepo.AddAsync(message);
+            if (dto.AttachmentIds != null && dto.AttachmentIds.Any())
+            {
+                var attachments = await _messageAttachmentRepo.FindByClause(a =>
+                    dto.AttachmentIds.Contains(a.BlobName) && a.UserId == userId);
 
+                foreach (var attachment in attachments)
+                {
+                    attachment.MessageId = message.Id; 
+                    await _messageAttachmentRepo.UpdateAsync(attachment);
+                }
+            }
             // Create UserMessage records for all members
             var userMessages = members.Select(member => new UserMessage
             {

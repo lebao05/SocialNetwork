@@ -17,5 +17,7 @@ namespace DataAccess.Entities
         public Message? ReplyToMessage { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public ICollection<UserMessage> UserMessages { get; set; } = new List<UserMessage>();
+
+        public ICollection<MessageAttachment> Attachments { get; set; } = new List<MessageAttachment>();
     }
 }

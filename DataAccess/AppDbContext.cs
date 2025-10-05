@@ -49,8 +49,11 @@ namespace DataAccess
         public DbSet<UserMessage> UserMessages { get; set; }
         public DbSet<Conversation> Conversations { get; set; }
         public DbSet<ConversationMember> ConversationMembers { get; set; }
+        public DbSet<MessageAttachment> MessageAttachments { get; set; }
+
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+       
         protected override void OnModelCreating(ModelBuilder builder)
         {
             var cascadeFKs = builder.Model.GetEntityTypes()

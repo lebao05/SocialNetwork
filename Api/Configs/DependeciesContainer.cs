@@ -34,6 +34,7 @@ namespace Api.Configs
             services.AddScoped<IUserMessageRepo, UserMessageRepo>();
             services.AddScoped<IConversationRepo, ConversationRepo>();
             services.AddScoped<IConversationMemberRepo, ConversationMemberRepo>();
+            services.AddScoped<IMessageAttachmentRepo, MessageAttachmentRepo>();
 
             services.AddSignalR();
             //Helpers

@@ -189,8 +189,12 @@ export const ChatProvider = ({ children }) => {
                 return;
             }
         }
+        // 1️⃣ Upload all attachments first
+        const attachments = files.length > 0 ? await uploadFiles(files) : [];
 
-        const newMessage = { conversationId, content: _content };
+        const newMessage = {
+            conversationId, content: _content, attachmentIds: attachments.map((a) => a.blobName),
+        };
 
         try {
             await connectionRef.current?.invoke("SendMessage", newMessage);
