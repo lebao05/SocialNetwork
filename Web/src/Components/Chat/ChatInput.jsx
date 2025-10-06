@@ -63,16 +63,14 @@ const ChatInput = ({
     };
 
     // Send message + optional files
-    const handleSend = (content = null) => {
+    const handleSend = async (content = null) => {
         const text = content ?? messageInput;
         if (text.trim() || selectedFiles.length > 0) {
             const filesToSend =
-            selectedFileIndexes.length > 0
-            ? selectedFileIndexes.map((i) => selectedFiles[i])
-            : selectedFiles;
-            
-            console.log(text);
-            handleSendMessage(text, filesToSend);
+                selectedFileIndexes.length > 0
+                    ? selectedFileIndexes.map((i) => selectedFiles[i])
+                    : selectedFiles;
+            await handleSendMessage(text, filesToSend);
             setMessageInput("");
             setSelectedFiles([]);
             setSelectedFileIndexes([]);

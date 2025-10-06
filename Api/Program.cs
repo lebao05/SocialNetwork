@@ -165,6 +165,7 @@ app.UseCors("AllowLocalhost");   // before auth
 app.UseAuthentication();         // must be before authorization
 app.UseAuthorization();
 app.MapHub<ChatHub>("hubs/chat");
+app.MapHub<VideoChatHub>("hubs/videochat")
 app.MapControllers();
 
 app.Run();

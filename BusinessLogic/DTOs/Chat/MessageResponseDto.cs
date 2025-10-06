@@ -10,5 +10,6 @@
         public string Content { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public bool IsEdited { get; set; }
+        public List<AttachmentDto> Attachments { get; set; } = new List<AttachmentDto>();
     }
 }

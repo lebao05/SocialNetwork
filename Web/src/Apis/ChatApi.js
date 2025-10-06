@@ -53,18 +53,23 @@ export const fetchConversation = async (id) => {
 };
 
 export async function uploadFileToSas(file) {
-  // 1️⃣ Request SAS URL from backend
-  const res = await axios.post("/chat/get-sas-upload", file.name);
-  const { sasUrl, blobName, blobUrl } = res.data.data;
+    // 1️⃣ Request SAS URL + blob info from backend
+    const res = await axios.post("/chat/get-sas-upload", {
+        originalName: file.name,
+        fileType: file.type,
+        size: file.size,
+    });
+    const { sasUrl, blobname } = res.data.data;
+    const blobUrl = sasUrl.split("?")[0]; // clean URL
 
-  // 2️⃣ Upload directly to Azure Blob
-  await axios.put(sasUrl, file, {
-    headers: {
-      "x-ms-blob-type": "BlockBlob",
-      "Content-Type": file.type,
-    },
-  });
+    // 2️⃣ Upload directly to Azure Blob
+    await axios.put(sasUrl, file, {
+        headers: {
+            "x-ms-blob-type": "BlockBlob",
+            "Content-Type": file.type,
+        },
+    });
 
-  // 3️⃣ Return blob info to use in message
-  return { blobName, blobUrl };
+    // 3️⃣ Return metadata for message linking
+    return { blobName: blobname, blobUrl, originalName: file.name, size: file.size };
 }

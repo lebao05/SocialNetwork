@@ -103,9 +103,8 @@ namespace DataAccess.Repositories.Implementations
         {
             if (entities == null || !entities.Any()) return new List<TEntity>();
 
-            object value = await await _context.Set<TEntity>().AddRangeAsync(entities);
+            await _context.Set<TEntity>().AddRangeAsync(entities);
             await _context.SaveChangesAsync();
-
             return entities.ToList();
         }
 

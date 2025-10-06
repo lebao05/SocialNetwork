@@ -18,6 +18,7 @@ namespace DataAccess.Repositories.Implementations
             return await _context.Messages
                 .Include(m => m.Sender)
                 .Include(m => m.UserMessages)
+                .Include(m=> m.MessageAttachments)
                 .Where(m => m.ConversationId == conversationId && !m.Deleted)
                 .OrderByDescending(m => m.CreatedAt)
                 .Skip((page - 1) * pageSize)

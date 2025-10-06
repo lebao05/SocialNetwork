@@ -4,7 +4,10 @@ using DataAccess;
 using DataAccess.Entities;
 using DataAccess.Repositories.Interfaces;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Shared.Configs;
 using Shared.Errors;
+using Shared.Services.Interfaces;
 using System.Linq;
 
 namespace BusinessLogic.Services.Implementations
@@ -16,6 +19,8 @@ namespace BusinessLogic.Services.Implementations
         private readonly IUserMessageRepo _userMessageRepo;
         private readonly IConversationMemberRepo _conversationMemberRepo;
         private readonly IMessageAttachmentRepo _messageAttachmentRepo;
+        private readonly IBlobService _blobService;
+        private readonly AzureStorageOptions _azureStorageOptions;
         private readonly ILogger<ChatService> _logger; 
         public ChatService(
             IConversationRepo conversationRepo,
@@ -24,14 +29,18 @@ namespace BusinessLogic.Services.Implementations
             IConversationMemberRepo conversationMemberRepo,
             AppDbContext context,
             ILogger<ChatService> logger,
-            IMessageAttachmentRepo messageAttachmentRepo)
+            IMessageAttachmentRepo messageAttachmentRepo,
+            IOptions<AzureStorageOptions> azureStorageOption,
+            IBlobService blobService)
         {
             _conversationRepo = conversationRepo;
             _messageRepo = messageRepo;
             _userMessageRepo = userMessageRepo;
             _conversationMemberRepo = conversationMemberRepo;
             _logger = logger;
+            _blobService = blobService;
             _messageAttachmentRepo = messageAttachmentRepo;
+            _azureStorageOptions = azureStorageOption.Value;
         }
         public async Task<MessageResponseDto> SendMessageAsync(string userId, SendMessageDto dto)
         {
@@ -65,7 +74,9 @@ namespace BusinessLogic.Services.Implementations
             if (dto.AttachmentIds != null && dto.AttachmentIds.Any())
             {
                 var attachments = await _messageAttachmentRepo.FindByClause(a =>
-                    dto.AttachmentIds.Contains(a.BlobName) && a.UserId == userId);
+                    dto.AttachmentIds.Contains(a.BlobName) && a.UserId == userId
+                    && a.MessageId == null && !a.Deleted
+                    );
 
                 foreach (var attachment in attachments)
                 {
@@ -86,6 +97,7 @@ namespace BusinessLogic.Services.Implementations
 
             // Get sender details
             var sender = members.FirstOrDefault(m => m.UserId == userId)?.User;
+            var attachmentsList = await _messageAttachmentRepo.FindByClause(a=>a.MessageId == message.Id && !a.Deleted);
             return new MessageResponseDto
             {
                 Id = message.Id,
@@ -96,6 +108,7 @@ namespace BusinessLogic.Services.Implementations
                 Content = message.Content,
                 CreatedAt = message.CreatedAt,
                 IsEdited = message.IsEdited,
+                Attachments = MapToAttachmentDtos(attachmentsList),
             };
         }
 
@@ -200,7 +213,7 @@ namespace BusinessLogic.Services.Implementations
         public async Task<List<MessageResponseDto>> GetConversationMessagesAsync(string conversationId, int page = 1, int pageSize = 50)
         {
             var messages = await _messageRepo.GetConversationMessagesAsync(conversationId, page, pageSize);
-
+            
             return messages.Select(m => new MessageResponseDto
             {
                 Id = m.Id,
@@ -211,6 +224,7 @@ namespace BusinessLogic.Services.Implementations
                 Content = m.Content,
                 CreatedAt = m.CreatedAt,
                 IsEdited = m.IsEdited,
+                Attachments = MapToAttachmentDtos(m.MessageAttachments.Where(a=>!a.Deleted).ToList()),
             }).Reverse().ToList();
         }
         public async Task<ConversationResponseDto> GetConversationByIdAsync(string conversationId, string userId)
@@ -290,6 +304,18 @@ namespace BusinessLogic.Services.Implementations
                 } : null,
                 Members = members
             };
+        }
+        private List<AttachmentDto> MapToAttachmentDtos(List<MessageAttachment> attachments)
+        {
+            return attachments.Select(
+             a => new AttachmentDto
+             {
+                 BlobUrl = _blobService.GenerateDownloadSasUrl(_azureStorageOptions.ConversationContainer, a.BlobName),
+                 OriginalName = a.OriginalName,
+                 FileType = a.FileType,
+                 Size = a.Size
+             }
+            ).ToList();
         }
     }
 }

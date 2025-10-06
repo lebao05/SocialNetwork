@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import * as signalR from "@microsoft/signalr";
-import { createConversationApi, fetchConversations, fetchMessages } from "../Apis/ChatApi";
+import { createConversationApi, fetchConversations, fetchMessages, uploadFileToSas } from "../Apis/ChatApi";
 import { getFriends } from "../Redux/Slices/FriendSlice";
 
 const ChatContext = createContext();
@@ -164,9 +164,8 @@ export const ChatProvider = ({ children }) => {
     };
 
     // === send message ===
-    const handleSendMessage = async (_content = null, files) => {
-        if (!_content.trim() || !selectedConversation) return;
-
+    const handleSendMessage = async (_content = null, files = []) => {
+        if ((!_content.trim() && files.length == 0) || !selectedConversation) return;
         let conversationId = selectedConversation.id;
 
         if (selectedConversation.isVirtual) {
@@ -190,7 +189,9 @@ export const ChatProvider = ({ children }) => {
             }
         }
         // 1️⃣ Upload all attachments first
-        const attachments = files.length > 0 ? await uploadFiles(files) : [];
+        const attachments = files.length > 0
+            ? await Promise.all(files.map((file) => uploadFileToSas(file)))
+            : [];
 
         const newMessage = {
             conversationId, content: _content, attachmentIds: attachments.map((a) => a.blobName),

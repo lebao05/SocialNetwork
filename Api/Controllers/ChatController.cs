@@ -111,22 +111,30 @@ namespace Api.Controllers
                 conversationId, page, pageSize);
             return Ok(new ApiResponse(200, "Successfully", messages));
         }
-        [HttpGet("convesations/get-sas-upload")]
-        public async Task<ActionResult> GetSasUpload([FromBody] string fileName)
+        [HttpPost("get-sas-upload")]
+        public async Task<ActionResult> GetSasUpload([FromBody] AttachmentMetadataDto dto)
         {
+            if( dto.Equals(null) || string.IsNullOrEmpty(dto.OriginalName) 
+                || string.IsNullOrEmpty(dto.FileType) || dto.Size <=0 )
+            {
+                return BadRequest(new ApiResponse(400, "Invalid attachment metadata", null));
+            }
             var userId = GetUserId();
             if( User == null )
                 return Unauthorized(new ApiResponse(401, "Unauthorized", null));
-            var blobname = $"{Guid.NewGuid()}{Path.GetExtension(fileName)}";
+            var blobname = $"{Guid.NewGuid()}{Path.GetExtension(dto.OriginalName)}";
             var sasUrl = _blobService.GenerateUploadSasUrl(
                 _options.ConversationContainer, blobname, 10);
             var uri = new Uri(sasUrl);
             var blobUrl = uri.GetLeftPart(UriPartial.Path); // removes query string
-            string currentUserId = userId;
             var attachment = await _messageAttachmentRepo.AddAsync(new MessageAttachment
             {
+                BlobName = blobname,
                 BlobUrl =  blobUrl,
-                UserId = currentUserId,
+                UserId = userId,
+                FileType = dto.FileType,
+                OriginalName = dto.OriginalName,
+                Size = dto.Size,
                 CreatedAt = DateTime.UtcNow
             });
             return Ok(new ApiResponse(200, "Successfully", new{ sasUrl = sasUrl, blobname = blobname }));

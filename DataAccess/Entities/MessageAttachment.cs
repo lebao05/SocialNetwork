@@ -11,15 +11,16 @@ namespace DataAccess.Entities
 {
     public class MessageAttachment : BaseEntity, IBaseEntity
     {
-        [Required]
-        public long MessageId { get; set; }
+        public string? MessageId { get; set; }
 
         [ForeignKey(nameof(MessageId))]
         public virtual Message Message { get; set; }
-
         [Required]
         [MaxLength(255)]
         public string BlobName { get; set; }
+        [Required]
+        [MaxLength(255)]
+        public string BlobUrl { get; set; }
 
         [Required]
         [MaxLength(255)]
@@ -33,7 +34,7 @@ namespace DataAccess.Entities
         public long Size { get; set; } 
 
         [Required]
-        public long UserId { get; set; } 
+        public string UserId { get; set; } 
 
         [Required]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

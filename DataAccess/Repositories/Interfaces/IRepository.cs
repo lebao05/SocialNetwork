@@ -18,6 +18,7 @@ namespace DataAccess.Repositories.Interfaces
         Task<TEntity> FindByIdAsync(string key);
         Task<List<TEntity>> FindByClause(Func<TEntity, bool> selector = null);
         Task<TEntity> GetByClause(Func<TEntity, bool> selector = null);
+        Task<List<TEntity>> AddRangeAsync(IEnumerable<TEntity> entities); // new
 
     }
 }
