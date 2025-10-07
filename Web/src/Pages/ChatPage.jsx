@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import Navbar from "../Components/Home/NavBar";
 import Sidebar from "../Components/Chat/Sidebar";
 import ChatHeader from "../Components/Chat/ChatHeader";
 import ChatMessages from "../Components/Chat/ChatMessage";
 import ChatInput from "../Components/Chat/ChatInput";
-import { ChatProvider, useChat } from "../Contexts/ChatContext";
+import ChatInfoPanel from "../Components/Chat/ChatInfoPanel";
+import { useChat } from "../Contexts/ChatContext";
 
 const ChatLayout = () => {
   const {
@@ -26,10 +27,14 @@ const ChatLayout = () => {
     handleSendMessage,
   } = useChat();
 
+  const [showInfo, setShowInfo] = useState(false);
+
   return (
     <div className="h-screen flex flex-col">
-      <Navbar />
-      <div className="flex h-full bg-gray-50">
+      <div className="absolute top-0 left-0 w-full h-[10%] z-20">
+        <Navbar />
+      </div>
+      <div className="flex h-[90%] mt-17 bg-gray-50">
         <Sidebar
           myAuth={myAuth}
           conversations={conversations}
@@ -41,10 +46,14 @@ const ChatLayout = () => {
           setConversations={setConversations}
         />
 
-        <div className="flex-1 flex flex-col">
+        {/* Chat Area */}
+        <div className="flex-1 flex flex-col relative">
           {selectedConversation ? (
             <>
-              <ChatHeader selectedConversation={selectedConversation} />
+              <ChatHeader
+                selectedConversation={selectedConversation}
+                onShowInfo={() => setShowInfo(!showInfo)}
+              />
               <ChatMessages
                 messages={messages[selectedConversation.id] || []}
                 currentUserId={currentUserId}
@@ -64,15 +73,17 @@ const ChatLayout = () => {
             </div>
           )}
         </div>
+
+        {/* Info Panel */}
+        {showInfo && (
+          <ChatInfoPanel
+            conversation={selectedConversation}
+            onClose={() => setShowInfo(false)}
+          />
+        )}
       </div>
     </div>
   );
 };
 
-const ChatPage = () => (
-  <ChatProvider>
-    <ChatLayout />
-  </ChatProvider>
-);
-
-export default ChatPage;
+export default ChatLayout;
