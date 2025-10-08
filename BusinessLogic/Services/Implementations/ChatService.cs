@@ -10,6 +10,7 @@ using Shared.Configs;
 using Shared.Errors;
 using Shared.Services.Interfaces;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace BusinessLogic.Services.Implementations
 {
@@ -287,6 +288,11 @@ namespace BusinessLogic.Services.Implementations
                 throw new HttpResponseException(500,"Failed to leave the group");
             return true;
         }
+        //public async Task<ConversationMemberDto> AddToConversation(String userId,String conversationId)
+        //{
+        //    var member = await _conversationMemberRepo.GetMemberAsync(conversationId, userId);
+
+        //}
         private async Task<ConversationResponseDto> MapToConversationDto(Conversation conv, string? currentUserId = null)
         {
             // Get last message

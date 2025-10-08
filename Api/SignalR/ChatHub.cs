@@ -75,7 +75,7 @@ namespace Api.SignalR
                 throw new HubException("Failed to send message");
             }
         }
-        public async Task LeaveGroup(string conversationID)
+        public async Task LeaveConversation(string conversationID)
         {
             var userId = ClaimsPrincipalExtensions.GetUserId(Context.User);
             if(string.IsNullOrEmpty(userId))
@@ -100,7 +100,10 @@ namespace Api.SignalR
                 throw new HubException("Failed to leave group");
             }
         }
-       
+        public async Task AddToGroup(AddToConversationDto dto)
+        {
+
+        }
         //public async Task<ConversationResponseDto> JoinConvervation(string conversationId)
         //{
         //    var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;

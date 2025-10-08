@@ -11,7 +11,7 @@ namespace DataAccess.Entities
         public AppUser User { get; set; } = null!;
 
         public string Role { get; set; } = string.Empty;
-        public bool NotificationAcceptance { get; set; } = true;
+        public bool NotificationEnabled { get; set; } = true;
 
         public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
     }

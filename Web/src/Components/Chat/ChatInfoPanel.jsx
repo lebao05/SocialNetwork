@@ -26,7 +26,7 @@ const ChatInfoPanel = ({ conversation = mockConversation, onClose }) => {
         <div className="w-96 bg-white border-l border-gray-200 flex flex-col h-full overflow-hidden">
             {/* Header */}
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h2 className="text-lg font-semibold">Thông tin về đoạn chat</h2>
+                <h2 className="text-lg font-semibold">Chat Details</h2>
                 <X className="cursor-pointer" size={20} onClick={onClose} />
             </div>
 
@@ -40,7 +40,7 @@ const ChatInfoPanel = ({ conversation = mockConversation, onClose }) => {
                         className="w-20 h-20 rounded-full mx-auto mb-3 object-cover"
                     />
                     <h3 className="font-semibold text-lg">{conversation.name}</h3>
-                    <p className="text-sm text-gray-500">Đang hoạt động</p>
+                    <p className="text-sm text-gray-500">Online</p>
                 </div>
 
                 {/* Quick Actions */}
@@ -49,13 +49,13 @@ const ChatInfoPanel = ({ conversation = mockConversation, onClose }) => {
                         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
                             <Bell size={20} />
                         </div>
-                        <span className="text-xs">Tắt thông báo</span>
+                        <span className="text-xs">Disable Notification</span>
                     </button>
                     <button className="flex flex-col items-center gap-2 hover:opacity-70">
                         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
                             <Search size={20} />
                         </div>
-                        <span className="text-xs">Tìm kiếm</span>
+                        <span className="text-xs">Search</span>
                     </button>
                 </div>
 
@@ -68,16 +68,16 @@ const ChatInfoPanel = ({ conversation = mockConversation, onClose }) => {
                             className="w-full p-4 flex justify-between hover:bg-gray-50"
                             onClick={() => toggleSection("customize")}
                         >
-                            <span className="font-medium">🎨 Tùy chỉnh đoạn chat</span>
+                            <span className="font-medium">🎨 Adjust Chat Info</span>
                             <span>{activeSection === "customize" ? "▼" : "▶"}</span>
                         </button>
                         {activeSection === "customize" && (
                             <div className="px-4 pb-4 space-y-2">
-                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded">✏️ Đổi tên đoạn chat</button>
-                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded">🖼️ Thay đổi ảnh</button>
-                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded">💜 Đổi chủ đề</button>
-                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded">👍 Thay đổi biểu tượng cảm xúc</button>
-                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded">Aa Chỉnh sửa biệt danh</button>
+                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded">✏️ Change Name</button>
+                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded">🖼️ Change Image</button>
+                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded">💜 Change Theme</button>
+                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded">👍 Change defaul emotion</button>
+                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded">Aa Change alias</button>
                             </div>
                         )}
                     </div>
@@ -89,7 +89,7 @@ const ChatInfoPanel = ({ conversation = mockConversation, onClose }) => {
                                 className="w-full p-4 flex justify-between hover:bg-gray-50"
                                 onClick={() => toggleSection("members")}
                             >
-                                <span className="font-medium">👥 Thành viên trong đoạn chat</span>
+                                <span className="font-medium">👥 Members</span>
                                 <span>{activeSection === "members" ? "▼" : "▶"}</span>
                             </button>
                             {activeSection === "members" && (
@@ -100,14 +100,14 @@ const ChatInfoPanel = ({ conversation = mockConversation, onClose }) => {
                                                 <img src={m.avatarUrl} className="w-10 h-10 rounded-full object-cover" />
                                                 <div>
                                                     <div className="text-sm font-medium">{m.name}</div>
-                                                    <div className="text-xs text-gray-500">{m.addedBy} đã thêm</div>
+                                                    <div className="text-xs text-gray-500">{m.addedBy} added</div>
                                                 </div>
                                             </div>
                                             <button className="text-gray-400 hover:text-gray-600">⋯</button>
                                         </div>
                                     ))}
                                     <button className="w-full py-2 flex items-center justify-center gap-2 hover:bg-gray-50 rounded">
-                                        <UserPlus size={20} /> Thêm người
+                                        <UserPlus size={20} /> Add more people to group
                                     </button>
                                 </div>
                             )}
@@ -120,14 +120,14 @@ const ChatInfoPanel = ({ conversation = mockConversation, onClose }) => {
                             className="w-full p-4 flex justify-between hover:bg-gray-50"
                             onClick={() => toggleSection("media")}
                         >
-                            <span className="font-medium">📁 File phương tiện, file và liên kết</span>
+                            <span className="font-medium">📁 Media,file and link</span>
                             <span>{activeSection === "media" ? "▼" : "▶"}</span>
                         </button>
                         {activeSection === "media" && (
                             <div className="px-4 pb-4 space-y-2">
-                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded flex items-center gap-2"><Image size={18} /> File phương tiện</button>
+                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded flex items-center gap-2"><Image size={18} /> Media</button>
                                 <button className="w-full text-left py-2 hover:bg-gray-50 rounded flex items-center gap-2"><File size={18} /> File</button>
-                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded flex items-center gap-2"><Link size={18} /> Liên kết</button>
+                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded flex items-center gap-2"><Link size={18} /> Link</button>
                             </div>
                         )}
                     </div>
@@ -138,14 +138,13 @@ const ChatInfoPanel = ({ conversation = mockConversation, onClose }) => {
                             className="w-full p-4 flex justify-between hover:bg-gray-50"
                             onClick={() => toggleSection("privacy")}
                         >
-                            <span className="font-medium">🔒 Quyền riêng tư & hỗ trợ</span>
+                            <span className="font-medium">🔒 Private</span>
                             <span>{activeSection === "privacy" ? "▼" : "▶"}</span>
                         </button>
                         {activeSection === "privacy" && (
                             <div className="px-4 pb-4 space-y-2">
-                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded flex items-center gap-2"><BellOff size={18} /> Tắt thông báo</button>
-                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded flex items-center gap-2">👁️ Thông báo đã đọc</button>
-                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded flex items-center gap-2 text-red-600">⚠️ Báo cáo</button>
+                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded flex items-center gap-2"><BellOff size={18} /> Disable Notification</button>
+                                <button className="w-full text-left py-2 hover:bg-gray-50 rounded flex items-center gap-2">👁️ Notification readed</button>
                             </div>
                         )}
                     </div>
@@ -154,7 +153,7 @@ const ChatInfoPanel = ({ conversation = mockConversation, onClose }) => {
                     {conversation.isGroup && (
                         <div className="p-4">
                             <button className="w-full py-3 text-red-600 hover:bg-red-50 rounded font-medium">
-                                Rời nhóm
+                                Leave Group
                             </button>
                         </div>
                     )}
