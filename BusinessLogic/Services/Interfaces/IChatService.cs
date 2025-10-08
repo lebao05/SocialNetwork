@@ -13,5 +13,7 @@ namespace BusinessLogic.Services.Interfaces
         Task<List<string>> GetUserConversationIds(string userId);
         Task<ConversationResponseDto> GetConversationByIdAsync(string conversationId, string userId);
         Task DeleteMessageAsync(string userId, string messageId);
+        Task<bool> LeaveChatGroup(string userId, string conversationId);
+
     }
 }

@@ -1,4 +1,5 @@
-﻿using BusinessLogic.DTOs.Chat;
+﻿using Api.Utils;
+using BusinessLogic.DTOs.Chat;
 using BusinessLogic.Services.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 using Shared.Errors;
@@ -74,6 +75,32 @@ namespace Api.SignalR
                 throw new HubException("Failed to send message");
             }
         }
+        public async Task LeaveGroup(string conversationID)
+        {
+            var userId = ClaimsPrincipalExtensions.GetUserId(Context.User);
+            if(string.IsNullOrEmpty(userId))
+            {
+                throw new HubException("Unauthorized");
+            }
+            try
+            {
+                var isSuccess = await _chatService.LeaveChatGroup(userId, conversationID);
+                if (!isSuccess)
+                {
+                    throw new HubException("Failed to leave group");
+                }
+                await Clients.Group(conversationID).SendAsync("LeaveGroup", userId);
+            }
+            catch(HttpResponseException ex) 
+            {
+                throw new HubException(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                throw new HubException("Failed to leave group");
+            }
+        }
+       
         //public async Task<ConversationResponseDto> JoinConvervation(string conversationId)
         //{
         //    var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;

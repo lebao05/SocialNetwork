@@ -5,6 +5,7 @@ using DataAccess.Entities;
 using DataAccess.Repositories.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Identity.Client;
 using Shared.Configs;
 using Shared.Errors;
 using Shared.Services.Interfaces;
@@ -274,7 +275,18 @@ namespace BusinessLogic.Services.Implementations
             }
         }
 
-
+        public async Task<bool> LeaveChatGroup(string userId,string conversationId)
+        {
+            var member = await _conversationMemberRepo.GetMemberAsync(conversationId,userId);
+            if (member == null)
+                throw new HttpResponseException(404,"User is not a member of this conversation");
+            if( !member.Conversation.IsGroup)
+                throw new HttpResponseException(400,"Cannot leave a one-on-one conversation");
+            var IsSuccessfull = await _conversationMemberRepo.DeleteAsync(member);
+            if(!IsSuccessfull)
+                throw new HttpResponseException(500,"Failed to leave the group");
+            return true;
+        }
         private async Task<ConversationResponseDto> MapToConversationDto(Conversation conv, string? currentUserId = null)
         {
             // Get last message
