@@ -1,4 +1,6 @@
-﻿using BusinessLogic.DTOs.Chat;
+﻿using AutoMapper;
+using BusinessLogic.DTOs.Chat;
+using BusinessLogic.DTOs.User;
 using BusinessLogic.Services.Interfaces;
 using DataAccess;
 using DataAccess.Entities;
@@ -21,6 +23,7 @@ namespace BusinessLogic.Services.Implementations
         private readonly IUserMessageRepo _userMessageRepo;
         private readonly IConversationMemberRepo _conversationMemberRepo;
         private readonly IMessageAttachmentRepo _messageAttachmentRepo;
+        private readonly IMapper _mapper;
         private readonly IBlobService _blobService;
         private readonly AzureStorageOptions _azureStorageOptions;
         private readonly ILogger<ChatService> _logger; 
@@ -33,8 +36,10 @@ namespace BusinessLogic.Services.Implementations
             ILogger<ChatService> logger,
             IMessageAttachmentRepo messageAttachmentRepo,
             IOptions<AzureStorageOptions> azureStorageOption,
-            IBlobService blobService)
+            IBlobService blobService,
+            IMapper mapper)
         {
+            _mapper = mapper;
             _conversationRepo = conversationRepo;
             _messageRepo = messageRepo;
             _userMessageRepo = userMessageRepo;
@@ -43,6 +48,7 @@ namespace BusinessLogic.Services.Implementations
             _blobService = blobService;
             _messageAttachmentRepo = messageAttachmentRepo;
             _azureStorageOptions = azureStorageOption.Value;
+
         }
         public async Task<MessageResponseDto> SendMessageAsync(string userId, SendMessageDto dto)
         {
@@ -171,46 +177,12 @@ namespace BusinessLogic.Services.Implementations
         {
             var conversations = await _conversationRepo.GetUserConversationsAsync(userId);
 
-            var result = conversations.Select(conv =>
-            {
-                string? pictureUrl = conv.IsGroup
-                    ? conv.PictureUrl 
-                    : conv.Members
-                          .FirstOrDefault(m => m.UserId != userId)?
-                          .User.AvatarUrl; 
-                return new ConversationResponseDto
-                {
-                    Id = conv.Id,
-                    Name = conv.IsGroup
-                    ? conv.Name
-                    : conv.Members
-                          .FirstOrDefault(m => m.UserId != userId) is { User: var otherUser }
-                              ? $"{otherUser.FirstName} {otherUser.LastName}"
-                              : "Unknown",
-                    IsGroup = conv.IsGroup,
-                    IsE2EE = conv.IsE2EE,
-                    PictureUrl = pictureUrl,
-                    CreatedAt = conv.CreatedAt,
-                    Members = conv.Members.Select(m => new ConversationMemberDto
-                    {
-                        UserId = m.UserId,
-                        Name = $"{m.User.FirstName} {m.User.LastName}",
-                        Role = m.Role,
-                    }).ToList(),
-                    LastMessage = conv.Messages
-                        .OrderByDescending(m => m.CreatedAt)
-                        .Select(m => new MessageResponseDto
-                        {
-                            Id = m.Id,
-                            Content = m.Content,
-                            SenderName = $"{m.Sender.FirstName} {m.Sender.LastName}",
-                            CreatedAt = m.CreatedAt
-                        })
-                        .FirstOrDefault()
-                };
-            }).ToList();
+            var result = await Task.WhenAll(conversations.Select(conv =>
+            {       
+                return MapToConversationDto(conv, userId);
+            }));
 
-            return result;
+            return result.ToList();
         }
         public async Task<List<MessageResponseDto>> GetConversationMessagesAsync(string conversationId, int page = 1, int pageSize = 50)
         {
@@ -288,6 +260,24 @@ namespace BusinessLogic.Services.Implementations
                 throw new HttpResponseException(500,"Failed to leave the group");
             return true;
         }
+        public async Task<bool> DeleteMessage(string userId,string messageId)
+        {
+            var message = await _messageRepo.GetByIdAsync(messageId);
+            if ( message == null)
+                throw new Exception("Message not found");
+            if (message.SenderId != userId)
+                throw new UnauthorizedAccessException("You do not have permission to delete the message;");
+            return await _messageRepo.DeleteAsync(message);
+        }
+        public async Task<bool> DeleteAttachment(string userId,string attachmentId)
+        {
+            var attachment = await _messageAttachmentRepo.GetByIdAsync(attachmentId);
+            if (attachment == null)
+                throw new Exception("Attachment not found");
+            if( attachment.UserId != userId )
+                throw new UnauthorizedAccessException("You do not have permission to delete the attachment;");
+            return await _messageAttachmentRepo.DeleteAsync(attachment);
+        }
         //public async Task<ConversationMemberDto> AddToConversation(String userId,String conversationId)
         //{
         //    var member = await _conversationMemberRepo.GetMemberAsync(conversationId, userId);
@@ -301,7 +291,7 @@ namespace BusinessLogic.Services.Implementations
             // Map members
             var members = conv.Members.Select(m => new ConversationMemberDto
             {
-                UserId = m.UserId,
+                User = _mapper.Map<UserDto>(m.User),
                 Name = $"{m.User.FirstName} {m.User.LastName}",
                 Role = m.Role,
             }).ToList();

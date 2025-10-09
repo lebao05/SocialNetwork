@@ -3,6 +3,7 @@ using BusinessLogic.DTOs.Chat;
 using BusinessLogic.Services.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 using Shared.Errors;
+using System.Runtime.InteropServices;
 using System.Security.Claims;
 
 namespace Api.SignalR
@@ -74,6 +75,48 @@ namespace Api.SignalR
             {
                 throw new HubException("Failed to send message");
             }
+        }
+        public async Task DeleteMessage(string messageId, string conversationId)
+        {
+            var userId = ClaimsPrincipalExtensions.GetUserId(Context.User);
+            if (string.IsNullOrEmpty(userId))
+                throw new Exception("Unauthorized");
+            try
+            {
+                var isSuccess = await _chatService.DeleteMessage(userId, messageId);
+                if (!isSuccess)
+                {
+                    throw new HubException("Failed to delete message");
+                }
+                await Clients.Group(conversationId).SendAsync("DeleteMessage", messageId);
+            }
+            catch (Exception ex)
+            {
+                throw new HubException("Failed to delete message");
+            }
+        }
+        public async Task DeleteAttachment(string attachmentId, string conversationId)
+        {
+            var userId = ClaimsPrincipalExtensions.GetUserId(Context.User);
+            if (string.IsNullOrEmpty(userId))
+                throw new Exception("Unauthorized");
+            try
+            {
+                var isSuccess = await _chatService.DeleteAttachment(userId, attachmentId);
+                if (!isSuccess)
+                {
+                    throw new HubException("Failed to delete attachment");
+                }
+                await Clients.Group(conversationId).SendAsync("DeleteAttachment", attachmentId);
+            }
+            catch (Exception ex)
+            {
+                throw new HubException("Failed to delete attachment");
+            }
+        }
+        public async Task ChangeConvesationDetails(string conversationId )
+        {
+
         }
         public async Task LeaveConversation(string conversationID)
         {
