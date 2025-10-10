@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using BusinessLogic.DTOs.Chat;
 using BusinessLogic.DTOs.EducationWork;
 using BusinessLogic.DTOs.Friend;
 using BusinessLogic.DTOs.User;
@@ -22,8 +23,9 @@ namespace Api.Configs
             CreateMap<WorkDto, Work>().ReverseMap();
             CreateMap<EducationDto, Education>().ReverseMap();
 
+            CreateMap<ConversationMember, ConversationMemberDto>().ReverseMap();
 
-            
+
 
         }
     }

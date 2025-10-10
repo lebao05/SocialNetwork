@@ -6,8 +6,12 @@ import ChatMessages from "../Components/Chat/ChatMessage";
 import ChatInput from "../Components/Chat/ChatInput";
 import ChatInfoPanel from "../Components/Chat/ChatInfoPanel";
 import { useChat } from "../Contexts/ChatContext";
+import { useLocation, useParams } from "react-router-dom";
 
-const ChatLayout = () => {
+const ChatLayout = ({ isNewChat = false }) => {
+  const { conversationId, userId } = useParams();
+  const location = useLocation();
+
   const {
     selectedConversation,
     currentUserId,
@@ -24,11 +28,18 @@ const ChatLayout = () => {
     messagesEndRef,
     messageInput,
     setMessageInput,
-    handleSendMessage,
+    handleSendMessage, 
+    fetchConversationById
   } = useChat();
 
   const [showInfo, setShowInfo] = useState(false);
+  useEffect(() => {
+    if (isNewChat) {
 
+    } else if (conversationId) {
+      fetchConversationById(conversationId);
+    }
+  }, [conversationId, isNewChat, location.search]);
   return (
     <div className="h-screen flex flex-col">
       <div className="absolute top-0 left-0 w-full h-[10%] z-20">

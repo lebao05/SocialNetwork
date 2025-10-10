@@ -5,6 +5,7 @@ using BusinessLogic.Services.Interfaces;
 using DataAccess;
 using DataAccess.Entities;
 using DataAccess.Repositories.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Client;
@@ -13,6 +14,7 @@ using Shared.Errors;
 using Shared.Services.Interfaces;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Xml;
 
 namespace BusinessLogic.Services.Implementations
 {
@@ -24,6 +26,7 @@ namespace BusinessLogic.Services.Implementations
         private readonly IConversationMemberRepo _conversationMemberRepo;
         private readonly IMessageAttachmentRepo _messageAttachmentRepo;
         private readonly IMapper _mapper;
+        private readonly UserManager<AppUser> _userManager;
         private readonly IBlobService _blobService;
         private readonly AzureStorageOptions _azureStorageOptions;
         private readonly ILogger<ChatService> _logger; 
@@ -37,6 +40,7 @@ namespace BusinessLogic.Services.Implementations
             IMessageAttachmentRepo messageAttachmentRepo,
             IOptions<AzureStorageOptions> azureStorageOption,
             IBlobService blobService,
+            UserManager<AppUser> userManager,
             IMapper mapper)
         {
             _mapper = mapper;
@@ -48,7 +52,7 @@ namespace BusinessLogic.Services.Implementations
             _blobService = blobService;
             _messageAttachmentRepo = messageAttachmentRepo;
             _azureStorageOptions = azureStorageOption.Value;
-
+            _userManager = userManager;
         }
         public async Task<MessageResponseDto> SendMessageAsync(string userId, SendMessageDto dto)
         {
@@ -224,30 +228,6 @@ namespace BusinessLogic.Services.Implementations
         {
             return await _conversationMemberRepo.GetUserConversationIdsAsync(userId);
         }
-
-        public async Task DeleteMessageAsync(string userId, string messageId)
-        {
-            var userMessage = await _userMessageRepo.GetUserMessageAsync(userId, messageId);
-
-            if (userMessage == null)
-            {
-                throw new Exception("Message not found for this user");
-            }
-
-            if (userMessage.Message.SenderId == userId)
-            {
-                // Sender can delete for everyone
-                userMessage.Message.Deleted = true;
-                await _messageRepo.UpdateAsync(userMessage.Message);
-            }
-            else
-            {
-                // Others can only delete for themselves
-                userMessage.DeleteAt = DateTime.UtcNow;
-                await _userMessageRepo.UpdateAsync(userMessage);
-            }
-        }
-
         public async Task<bool> LeaveChatGroup(string userId,string conversationId)
         {
             var member = await _conversationMemberRepo.GetMemberAsync(conversationId,userId);
@@ -278,11 +258,45 @@ namespace BusinessLogic.Services.Implementations
                 throw new UnauthorizedAccessException("You do not have permission to delete the attachment;");
             return await _messageAttachmentRepo.DeleteAsync(attachment);
         }
-        //public async Task<ConversationMemberDto> AddToConversation(String userId,String conversationId)
-        //{
-        //    var member = await _conversationMemberRepo.GetMemberAsync(conversationId, userId);
-
-        //}
+        public async Task<ConversationResponseDto> ChangeConversationDetails(string userId,UpdateConversationDto dto)
+        {
+            var conversation = await _conversationRepo.GetConversationWithMembersAsync(dto.ConversationId);
+            if( conversation == null )
+                throw new Exception("Conversation not found");
+            var member = await _conversationMemberRepo.GetMemberAsync(dto.ConversationId,userId);
+            if( member == null )
+                throw new UnauthorizedAccessException("You are not a member of this conversation");
+            conversation.Name = dto.Name;
+            conversation.IsE2EE = dto.IsE2EE;
+            conversation.PictureUrl = dto.PictureUrl;
+            await _conversationRepo.UpdateAsync(conversation);
+            return await MapToConversationDto(conversation,userId);
+        }
+        public async Task<ConversationMemberDto> AddToConversation(String userId, AddToConversationDto dto)
+        {
+            var isMember = await _conversationMemberRepo.IsMemberAsync(dto.ConversationId, userId);
+            if( !isMember )
+                throw new Exception("You are not a member of this conversation");
+            var member = await _conversationMemberRepo.GetMemberAsync(dto.ConversationId, userId);
+            var User = await _userManager.FindByIdAsync(userId);
+            if( User == null )
+                throw new Exception("User not found");
+            if (member != null)
+                throw new Exception("This user is already a member of the conversation!");
+            var conversation = await _conversationRepo.GetConversationWithMembersAsync(dto.ConversationId);
+            if (conversation == null)
+                throw new Exception("Conversation not found");
+            var memb = new ConversationMember
+            {
+                ConversationId = dto.ConversationId,
+                UserId = userId,
+                Role = "Member",
+                JoinedAt = DateTime.UtcNow
+            };
+            await _conversationMemberRepo.AddAsync(memb);
+            var memberRes = await _conversationMemberRepo.GetMemberAsync(dto.ConversationId, userId);
+            return _mapper.Map<ConversationMemberDto>(memberRes);
+        }
         private async Task<ConversationResponseDto> MapToConversationDto(Conversation conv, string? currentUserId = null)
         {
             // Get last message
@@ -292,7 +306,6 @@ namespace BusinessLogic.Services.Implementations
             var members = conv.Members.Select(m => new ConversationMemberDto
             {
                 User = _mapper.Map<UserDto>(m.User),
-                Name = $"{m.User.FirstName} {m.User.LastName}",
                 Role = m.Role,
             }).ToList();
 

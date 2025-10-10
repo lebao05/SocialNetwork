@@ -79,13 +79,22 @@ function App() {
             }
           />
           <Route
-            path="/chat"
+            path="/chat/t/:conversationId"
             element={
               <ProtectedRoute user={user}>
                 <ChatPage />
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/chat/new/:userId"
+            element={
+              <ProtectedRoute user={user}>
+                <ChatPage isNewChat={true} />
+              </ProtectedRoute>
+            }
+          />
+
         </Routes>
       </Router>
     </>

@@ -1,7 +1,13 @@
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import * as signalR from "@microsoft/signalr";
-import { createConversationApi, fetchConversations, fetchMessages, uploadFileToSas } from "../Apis/ChatApi";
+import {
+    createConversationApi,
+    fetchConversationApi,
+    fetchConversations,
+    fetchMessages,
+    uploadFileToSas,
+} from "../Apis/ChatApi";
 import { getFriends } from "../Redux/Slices/FriendSlice";
 
 const ChatContext = createContext();
@@ -18,18 +24,17 @@ export const ChatProvider = ({ children }) => {
 
     const messagesContainerRef = useRef(null);
     const messagesEndRef = useRef(null);
+    const connectionRef = useRef(null);
 
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [conversations, setConversations] = useState([]);
-    const [messages, setMessages] = useState({});
-    const [pageTracker, setPageTracker] = useState({});
-    const [hasMore, setHasMore] = useState({});
+    const [messages, setMessages] = useState([]); // ✅ only one conversation's messages
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
     const [selectedConversation, setSelectedConversation] = useState(null);
     const [messageInput, setMessageInput] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [isConnected, setIsConnected] = useState(false);
-
-    const connectionRef = useRef(null);
 
     // === Setup SignalR Connection ===
     useEffect(() => {
@@ -50,24 +55,39 @@ export const ChatProvider = ({ children }) => {
             .then(() => setIsConnected(true))
             .catch((err) => console.error("SignalR connection error:", err));
 
-        connection.on("ReceiveMessage", (message) => {
-            setMessages((prev) => ({
-                ...prev,
-                [message.conversationId]: [
-                    ...(prev[message.conversationId] || []),
-                    message,
-                ],
-            }));
+        // 🟢 When message is deleted
+        connection.on("DeleteMessage", (messageId) => {
+            setMessages((prev) =>
+                prev.map((m) =>
+                    m.id === messageId ? { ...m, isDeleted: true } : m
+                )
+            );
+        });
 
-            setConversations((prev) => {
-                const exists = prev.some((conv) => conv.id === message.conversationId);
-                if (!exists) {
-                    fetchConversations()
-                        .then((res) => setConversations(res.data || []))
-                        .catch((err) => console.error("Failed to refresh conversations:", err));
-                    return prev;
-                }
-                return prev.map((conv) =>
+
+        // 🟢 When attachment is deleted
+        connection.on("DeleteAttachment", (attachmentId) => {
+            setMessages((prev) =>
+                prev.map((m) =>
+                    m.id === attachmentId ? { ...m, isDeleted: true } : m
+                )
+            );
+        });
+
+        // 🟢 When a message is received
+        connection.on("ReceiveMessage", (message) => {
+            // only update if it belongs to the selected conversation
+            if (message.conversationId === selectedConversation?.id) {
+                setMessages((prev) => [...prev, message]);
+                setTimeout(
+                    () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
+                    100
+                );
+            }
+
+            // update conversation list preview
+            setConversations((prev) =>
+                prev.map((conv) =>
                     conv.id === message.conversationId
                         ? {
                             ...conv,
@@ -78,18 +98,8 @@ export const ChatProvider = ({ children }) => {
                                     : (conv.unreadCount || 0) + 1,
                         }
                         : conv
-                );
-            });
-
-            setTimeout(() => {
-                const container = messagesContainerRef.current;
-                if (
-                    container &&
-                    container.scrollHeight - container.scrollTop - container.clientHeight < 50
-                ) {
-                    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-                }
-            }, 100);
+                )
+            );
         });
 
         return () => {
@@ -110,15 +120,9 @@ export const ChatProvider = ({ children }) => {
         if (!selectedConversation) return;
         fetchMessages(selectedConversation.id, 1, 20)
             .then((res) => {
-                setMessages((prev) => ({
-                    ...prev,
-                    [selectedConversation.id]: res.data || [],
-                }));
-                setPageTracker((prev) => ({ ...prev, [selectedConversation.id]: 1 }));
-                setHasMore((prev) => ({
-                    ...prev,
-                    [selectedConversation.id]: (res.data || []).length > 0,
-                }));
+                setMessages(res.data || []);
+                setPage(1);
+                setHasMore((res.data || []).length > 0);
 
                 setTimeout(
                     () => messagesEndRef.current?.scrollIntoView({ behavior: "auto" }),
@@ -128,32 +132,20 @@ export const ChatProvider = ({ children }) => {
             .catch((err) => console.error("Failed to fetch messages:", err));
     }, [selectedConversation]);
 
-    // === infinite scroll ===
+    // === Infinite scroll ===
     const handleScroll = () => {
         const container = messagesContainerRef.current;
         if (!container || !selectedConversation) return;
 
-        if (container.scrollTop === 0 && hasMore[selectedConversation.id]) {
-            const nextPage = (pageTracker[selectedConversation.id] || 1) + 1;
+        if (container.scrollTop === 0 && hasMore) {
+            const nextPage = page + 1;
             const prevHeight = container.scrollHeight;
 
             fetchMessages(selectedConversation.id, nextPage, 10).then((res) => {
                 const newMessages = res.data || [];
-                setMessages((prev) => ({
-                    ...prev,
-                    [selectedConversation.id]: [
-                        ...newMessages,
-                        ...(prev[selectedConversation.id] || []),
-                    ],
-                }));
-                setPageTracker((prev) => ({
-                    ...prev,
-                    [selectedConversation.id]: nextPage,
-                }));
-                setHasMore((prev) => ({
-                    ...prev,
-                    [selectedConversation.id]: newMessages.length > 0,
-                }));
+                setMessages((prev) => [...newMessages, ...prev]);
+                setPage(nextPage);
+                setHasMore(newMessages.length > 0);
 
                 setTimeout(() => {
                     const newHeight = container.scrollHeight;
@@ -163,11 +155,40 @@ export const ChatProvider = ({ children }) => {
         }
     };
 
-    // === send message ===
-    const handleSendMessage = async (_content = null, files = []) => {
-        if ((!_content.trim() && files.length == 0) || !selectedConversation) return;
+    // === Delete a message ===
+    const deleteMessage = async (messageId, conversationId) => {
+        try {
+            await connectionRef.current?.invoke(
+                "DeleteMessage",
+                messageId,
+                conversationId
+            );
+        } catch (err) {
+            console.error("Failed to delete message:", err);
+        }
+    };
+
+    // === Delete an attachment ===
+    const deleteAttachment = async (attachmentId, conversationId) => {
+        try {
+            await connectionRef.current?.invoke(
+                "DeleteAttachment",
+                attachmentId,
+                conversationId
+            );
+        } catch (err) {
+            console.error("Failed to delete attachment:", err);
+        }
+    };
+
+    // === Send message ===
+    const handleSendMessage = async (_content = "", files = []) => {
+        if ((!_content.trim() && files.length === 0) || !selectedConversation)
+            return;
+
         let conversationId = selectedConversation.id;
 
+        // If virtual (not yet created)
         if (selectedConversation.isVirtual) {
             try {
                 const response = await createConversationApi({
@@ -175,12 +196,7 @@ export const ChatProvider = ({ children }) => {
                     isGroup: false,
                 });
                 const realConversation = response.data;
-
-                setSelectedConversation({
-                    ...selectedConversation,
-                    id: realConversation.id,
-                    isVirtual: false,
-                });
+                setSelectedConversation(realConversation);
                 setConversations((prev) => [realConversation, ...prev]);
                 conversationId = realConversation.id;
             } catch (error) {
@@ -188,13 +204,17 @@ export const ChatProvider = ({ children }) => {
                 return;
             }
         }
-        // 1️⃣ Upload all attachments first
-        const attachments = files.length > 0
-            ? await Promise.all(files.map((file) => uploadFileToSas(file)))
-            : [];
+
+        // Upload attachments
+        const attachments =
+            files.length > 0
+                ? await Promise.all(files.map((file) => uploadFileToSas(file)))
+                : [];
 
         const newMessage = {
-            conversationId, content: _content, attachmentIds: attachments.map((a) => a.blobName),
+            conversationId,
+            content: _content,
+            attachmentIds: attachments.map((a) => a.blobName),
         };
 
         try {
@@ -208,6 +228,17 @@ export const ChatProvider = ({ children }) => {
             () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
             100
         );
+    };
+
+    // === Fetch conversation by ID ===
+    const fetchConversationById = async (conversationId) => {
+        try {
+            const res = await fetchConversationApi(conversationId);
+            const data = await res.json();
+            setSelectedConversation(data);
+        } catch (error) {
+            console.error(error);
+        }
     };
 
     return (
@@ -225,10 +256,13 @@ export const ChatProvider = ({ children }) => {
                 setOnlineUsers,
                 messageInput,
                 setMessageInput,
+                fetchConversationById,
                 searchQuery,
                 setSearchQuery,
                 handleSendMessage,
                 handleScroll,
+                deleteMessage,
+                deleteAttachment,
                 messagesContainerRef,
                 messagesEndRef,
                 friends,

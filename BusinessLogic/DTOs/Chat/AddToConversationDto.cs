@@ -8,7 +8,7 @@ namespace BusinessLogic.DTOs.Chat
 {
     public class AddToConversationDto
     {
-        string conversationId { get; set; } = string.Empty;
-        string userId { get; set; } = string.Empty;
+        public string ConversationId { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
     }
 }

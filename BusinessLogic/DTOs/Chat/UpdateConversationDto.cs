@@ -6,7 +6,11 @@ using System.Threading.Tasks;
 
 namespace BusinessLogic.DTOs.Chat
 {
-    internal class UpdateConversationDto
+    public class UpdateConversationDto
     {
+        public string ConversationId { get; set; }
+        public string? Name { get; set; } 
+        public string? PictureUrl { get; set; }
+        public bool IsE2EE { get; set; } = true;
     }
 }

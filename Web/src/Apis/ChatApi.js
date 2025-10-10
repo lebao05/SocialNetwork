@@ -42,7 +42,7 @@ export const createConversationApi = async (dto) => {
         throw error;
     }
 };
-export const fetchConversation = async (id) => {
+export const fetchConversationApi = async (id) => {
     try {
         const response = await axios.get(`/chat/conversations/${id}`); // fix endpoint if needed
         return response.data;

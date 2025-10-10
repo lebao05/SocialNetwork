@@ -114,9 +114,20 @@ namespace Api.SignalR
                 throw new HubException("Failed to delete attachment");
             }
         }
-        public async Task ChangeConvesationDetails(string conversationId )
+        public async Task ChangeConvesationDetail(UpdateConversationDto dto)
         {
-
+            var userId = ClaimsPrincipalExtensions.GetUserId(Context.User);
+            if(string.IsNullOrEmpty(userId))
+                throw new HubException("Unauthorized");
+            try
+            {
+                var res = await _chatService.ChangeConversationDetails(userId, dto);
+                await Clients.Groups(dto.ConversationId).SendAsync("UpdateConversation", res);
+            }
+            catch(Exception ex)
+            {
+                throw new HubException(ex.Message);
+            }
         }
         public async Task LeaveConversation(string conversationID)
         {
@@ -145,8 +156,25 @@ namespace Api.SignalR
         }
         public async Task AddToGroup(AddToConversationDto dto)
         {
-
+            var userId = ClaimsPrincipalExtensions.GetUserId(Context.User);
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new HubException("Unauthorized");
+            }
+            try
+            {
+                var member = await _chatService.AddToConversation(userId, dto);
+                await Clients.Group(dto.ConversationId).SendAsync("AddToGroup", member);
+            }
+            catch(Exception ex)
+            {
+                throw new HubException(ex.Message);
+            }
         }
+        //public async Task ChangeAlias(string conversationId,ConversationMemberDto dto)
+        //{
+
+        //}
         //public async Task<ConversationResponseDto> JoinConvervation(string conversationId)
         //{
         //    var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;

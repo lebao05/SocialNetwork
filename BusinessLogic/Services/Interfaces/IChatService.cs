@@ -12,9 +12,10 @@ namespace BusinessLogic.Services.Interfaces
         Task<bool> IsConversationMember(string conversationId, string userId);
         Task<List<string>> GetUserConversationIds(string userId);
         Task<ConversationResponseDto> GetConversationByIdAsync(string conversationId, string userId);
-        Task DeleteMessageAsync(string userId, string messageId);
         Task<bool> LeaveChatGroup(string userId, string conversationId);
         Task<bool> DeleteMessage(string userId, string messageId);
         Task<bool> DeleteAttachment(string userId, string attachmentId);
+        Task<ConversationResponseDto> ChangeConversationDetails(string userId, UpdateConversationDto dto);
+        Task<ConversationMemberDto> AddToConversation(String userId,AddToConversationDto dto);
     }
 }
