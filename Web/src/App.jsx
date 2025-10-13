@@ -94,7 +94,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
         </Routes>
       </Router>
     </>

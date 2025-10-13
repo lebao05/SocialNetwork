@@ -7,7 +7,7 @@ import ChatInput from "../Components/Chat/ChatInput";
 import ChatInfoPanel from "../Components/Chat/ChatInfoPanel";
 import { useChat } from "../Contexts/ChatContext";
 import { useLocation, useParams } from "react-router-dom";
-
+import { useEffect } from "react";
 const ChatLayout = ({ isNewChat = false }) => {
   const { conversationId, userId } = useParams();
   const location = useLocation();
@@ -28,14 +28,13 @@ const ChatLayout = ({ isNewChat = false }) => {
     messagesEndRef,
     messageInput,
     setMessageInput,
-    handleSendMessage, 
-    fetchConversationById
+    handleSendMessage,
+    fetchConversationById,
   } = useChat();
 
   const [showInfo, setShowInfo] = useState(false);
   useEffect(() => {
     if (isNewChat) {
-
     } else if (conversationId) {
       fetchConversationById(conversationId);
     }
@@ -66,7 +65,7 @@ const ChatLayout = ({ isNewChat = false }) => {
                 onShowInfo={() => setShowInfo(!showInfo)}
               />
               <ChatMessages
-                messages={messages[selectedConversation.id] || []}
+                messages={messages}
                 currentUserId={currentUserId}
                 messagesContainerRef={messagesContainerRef}
                 messagesEndRef={messagesEndRef}
