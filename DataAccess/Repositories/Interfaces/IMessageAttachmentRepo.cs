@@ -9,5 +9,7 @@ namespace DataAccess.Repositories.Interfaces
 {
     public interface IMessageAttachmentRepo : IRepository<MessageAttachment>
     {
+        Task<MessageAttachment> FindOneByBlobName(string blobName);
+
     }
 }

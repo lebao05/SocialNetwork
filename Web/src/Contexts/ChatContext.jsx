@@ -71,17 +71,25 @@ export const ChatProvider = ({ children }) => {
     const connection = connectionRef.current;
     if (!connection) return;
 
-    // 🟢 Message deleted
+    // Delete entire message
     const handleDeleteMessage = (messageId) => {
       setMessages((prev) =>
-        prev.map((m) => (m.id === messageId ? { ...m, isDeleted: true } : m))
+        prev.map((m) => (m.id === messageId ? { ...m, deleted: true } : m))
       );
     };
 
-    // 🟢 Attachment deleted
+    // Delete a specific attachment inside a message
     const handleDeleteAttachment = (attachmentId) => {
       setMessages((prev) =>
-        prev.map((m) => (m.id === attachmentId ? { ...m, isDeleted: true } : m))
+        prev.map((m) => {
+          if (!m.attachments) return m;
+
+          const updatedAttachments = m.attachments.map((att) =>
+            att.id === attachmentId ? { ...att, deleted: true } : att
+          );
+
+          return { ...m, attachments: updatedAttachments };
+        })
       );
     };
 
@@ -142,6 +150,7 @@ export const ChatProvider = ({ children }) => {
     if (!selectedConversation) return;
     fetchMessages(selectedConversation.id, 1, 20)
       .then((res) => {
+        console.log(res.data);
         setMessages(res.data || []);
         setPage(1);
         setHasMore((res.data || []).length > 0);
@@ -177,25 +186,17 @@ export const ChatProvider = ({ children }) => {
   };
 
   // === Delete message / attachment ===
-  const deleteMessage = async (messageId, conversationId) => {
+  const deleteMessage = async (messageId) => {
     try {
-      await connectionRef.current?.invoke(
-        "DeleteMessage",
-        messageId,
-        conversationId
-      );
+      await connectionRef.current?.invoke("DeleteMessage", messageId);
     } catch (err) {
       console.error("Failed to delete message:", err);
     }
   };
 
-  const deleteAttachment = async (attachmentId, conversationId) => {
+  const deleteAttachment = async (attachmentId) => {
     try {
-      await connectionRef.current?.invoke(
-        "DeleteAttachment",
-        attachmentId,
-        conversationId
-      );
+      await connectionRef.current?.invoke("DeleteAttachment", attachmentId);
     } catch (err) {
       console.error("Failed to delete attachment:", err);
     }
@@ -205,8 +206,10 @@ export const ChatProvider = ({ children }) => {
   const handleSendMessage = async (_content = "", files = []) => {
     if ((!_content.trim() && files.length === 0) || !selectedConversation)
       return;
+
     let conversationId = selectedConversation.id;
 
+    // 🧩 Create a real conversation if it's virtual
     if (selectedConversation.isVirtual) {
       try {
         const response = await createConversationApi({
@@ -223,28 +226,37 @@ export const ChatProvider = ({ children }) => {
       }
     }
 
-    const attachments =
-      files.length > 0
-        ? await Promise.all(files.map((file) => uploadFileToSas(file)))
-        : [];
-
-    const newMessage = {
-      conversationId,
-      content: _content,
-      attachmentIds: attachments.map((a) => a.blobName),
-    };
-
     try {
-      await connectionRef.current?.invoke("SendMessage", newMessage);
+      // 1️⃣ Send text message first (if provided)
+      if (_content.trim()) {
+        const textMessage = {
+          conversationId,
+          content: _content.trim(),
+          attachment: null,
+        };
+        await connectionRef.current?.invoke("SendMessage", textMessage);
+      }
+
+      // 2️⃣ Then send each file as a separate message
+      for (const file of files) {
+        const uploaded = await uploadFileToSas(file);
+        const fileMessage = {
+          conversationId,
+          content: "", // no text for attachment-only message
+          attachment: uploaded.blobName,
+        };
+        await connectionRef.current?.invoke("SendMessage", fileMessage);
+      }
+
+      // 3️⃣ Reset input and scroll to bottom
+      setMessageInput("");
+      setTimeout(
+        () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
+        100
+      );
     } catch (err) {
       console.error("Failed to send message:", err);
     }
-
-    setMessageInput("");
-    setTimeout(
-      () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
-      100
-    );
   };
 
   const fetchConversationById = async (conversationId) => {

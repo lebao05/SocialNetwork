@@ -1,11 +1,13 @@
 import React from "react";
 import ConversationItem from "./ConversationItem";
+import { useNavigate } from "react-router-dom";
 
 const ConversationList = ({
   conversations,
   selectedConversation,
   setSelectedConversation,
 }) => {
+  const navigate = useNavigate();
   return (
     <div className="flex-1 overflow-y-auto">
       {conversations.map((conv) => {
@@ -14,7 +16,7 @@ const ConversationList = ({
             key={conv.id}
             conversation={conv}
             isSelected={selectedConversation?.id === conv.id}
-            onSelect={() => setSelectedConversation(conv)}
+            onSelect={() => navigate("/chat/t/" + conv.id)}
           />
         );
       })}

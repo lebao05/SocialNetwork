@@ -7,7 +7,6 @@ const ConversationItem = ({ conversation, isSelected, onSelect }) => {
   const otherMember = !conversation.isGroup
     ? conversation.members?.find((m) => m.user.id !== myAuth.id)
     : null;
-  console.log("okther", otherMember);
   const conversationName = conversation.isGroup
     ? conversation.name
     : otherMember

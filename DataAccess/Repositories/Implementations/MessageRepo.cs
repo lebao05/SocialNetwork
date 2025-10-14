@@ -18,8 +18,8 @@ namespace DataAccess.Repositories.Implementations
             return await _context.Messages
                 .Include(m => m.Sender)
                 .Include(m => m.UserMessages)
-                .Include(m=> m.MessageAttachments)
-                .Where(m => m.ConversationId == conversationId && !m.Deleted)
+                .Include(m=> m.MessageAttachment)
+                .Where(m => m.ConversationId == conversationId)
                 .OrderByDescending(m => m.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -32,7 +32,7 @@ namespace DataAccess.Repositories.Implementations
                 .Include(m => m.Sender)
                 .Include(m => m.UserMessages)
                 .Include(m => m.Conversation)
-                .FirstOrDefaultAsync(m => m.Id == messageId && !m.Deleted);
+                .FirstOrDefaultAsync(m => m.Id == messageId);
         }
 
         public async Task<int> GetUnreadCountAsync(string conversationId, string userId)

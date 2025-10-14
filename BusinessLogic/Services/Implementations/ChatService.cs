@@ -12,9 +12,6 @@ using Microsoft.Identity.Client;
 using Shared.Configs;
 using Shared.Errors;
 using Shared.Services.Interfaces;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Xml;
 
 namespace BusinessLogic.Services.Implementations
 {
@@ -69,7 +66,11 @@ namespace BusinessLogic.Services.Implementations
             {
                 throw new Exception("Conversation has no members");
             }
-
+            var attachment = await _messageAttachmentRepo.FindOneByBlobName(dto.Attachment);
+            if( attachment == null && dto.Content == null)
+            {
+                throw new Exception("Message must have content or attachment");
+            }
             // Create message
             var message = new Message
             {
@@ -83,18 +84,10 @@ namespace BusinessLogic.Services.Implementations
             };
 
             await _messageRepo.AddAsync(message);
-            if (dto.AttachmentIds != null && dto.AttachmentIds.Any())
+            if( attachment != null)
             {
-                var attachments = await _messageAttachmentRepo.FindByClause(a =>
-                    dto.AttachmentIds.Contains(a.BlobName) && a.UserId == userId
-                    && a.MessageId == null && !a.Deleted
-                    );
-
-                foreach (var attachment in attachments)
-                {
-                    attachment.MessageId = message.Id; 
-                    await _messageAttachmentRepo.UpdateAsync(attachment);
-                }
+                attachment.MessageId = message.Id; 
+                await _messageAttachmentRepo.UpdateAsync(attachment);
             }
             // Create UserMessage records for all members
             var userMessages = members.Select(member => new UserMessage
@@ -109,7 +102,6 @@ namespace BusinessLogic.Services.Implementations
 
             // Get sender details
             var sender = members.FirstOrDefault(m => m.UserId == userId)?.User;
-            var attachmentsList = await _messageAttachmentRepo.FindByClause(a=>a.MessageId == message.Id && !a.Deleted);
             return new MessageResponseDto
             {
                 Id = message.Id,
@@ -120,7 +112,7 @@ namespace BusinessLogic.Services.Implementations
                 Content = message.Content,
                 CreatedAt = message.CreatedAt,
                 IsEdited = message.IsEdited,
-                Attachments = MapToAttachmentDtos(attachmentsList),
+                Attachment = MapToAttachmentDtos(attachment),
             };
         }
 
@@ -180,13 +172,34 @@ namespace BusinessLogic.Services.Implementations
         public async Task<List<ConversationResponseDto>> GetUserConversationsAsync(string userId)
         {
             var conversations = await _conversationRepo.GetUserConversationsAsync(userId);
+            var result = new List<ConversationResponseDto>();
+            foreach (var conv in conversations)
+            {
+                result.Add(await MapToConversationDto(conv, userId)); // sequential - safe
+            }
+            return result;
+        }
 
-            var result = await Task.WhenAll(conversations.Select(conv =>
-            {       
-                return MapToConversationDto(conv, userId);
-            }));
-
-            return result.ToList();
+        public async Task<MessageResponseDto> GetMessageById(string messageId)
+        {
+            var message = await _messageRepo.GetMessageWithDetailsAsync(messageId);
+            if (message == null)
+            {
+                throw new Exception("Message not found");
+            }
+            return new MessageResponseDto
+            {
+                Id = message.Id,
+                ConversationId = message.ConversationId,
+                SenderId = message.SenderId,
+                SenderName = $"{message.Sender.FirstName} {message.Sender.LastName}",
+                SenderAvatar = message.Sender.AvatarUrl,
+                Content = message.Content,
+                CreatedAt = message.CreatedAt,
+                Deleted = message.Deleted,
+                IsEdited = message.IsEdited,
+                Attachment = MapToAttachmentDtos(message.MessageAttachment),
+            };
         }
         public async Task<List<MessageResponseDto>> GetConversationMessagesAsync(string conversationId, int page = 1, int pageSize = 50)
         {
@@ -202,7 +215,8 @@ namespace BusinessLogic.Services.Implementations
                 Content = m.Content,
                 CreatedAt = m.CreatedAt,
                 IsEdited = m.IsEdited,
-                Attachments = MapToAttachmentDtos(m.MessageAttachments.Where(a=>!a.Deleted).ToList()),
+                Deleted = m.Deleted,
+                Attachment = MapToAttachmentDtos(m.MessageAttachment),
             }).Reverse().ToList();
         }
         public async Task<ConversationResponseDto> GetConversationByIdAsync(string conversationId, string userId)
@@ -242,7 +256,7 @@ namespace BusinessLogic.Services.Implementations
         }
         public async Task<bool> DeleteMessage(string userId,string messageId)
         {
-            var message = await _messageRepo.GetByIdAsync(messageId);
+            var message = await _messageRepo.GetMessageWithDetailsAsync(messageId);
             if ( message == null)
                 throw new Exception("Message not found");
             if (message.SenderId != userId)
@@ -252,11 +266,25 @@ namespace BusinessLogic.Services.Implementations
         public async Task<bool> DeleteAttachment(string userId,string attachmentId)
         {
             var attachment = await _messageAttachmentRepo.GetByIdAsync(attachmentId);
-            if (attachment == null)
+            if( attachment == null)
                 throw new Exception("Attachment not found");
-            if( attachment.UserId != userId )
+            if( attachment.UserId != userId)
                 throw new UnauthorizedAccessException("You do not have permission to delete the attachment;");
+            var message = await _messageRepo.GetMessageWithDetailsAsync(attachment.MessageId);
+            if( message == null)
+                throw new Exception("Message not found");
+            // Delete blob from storage
+            // Delete record from database
             return await _messageAttachmentRepo.DeleteAsync(attachment);
+        }
+        public async Task<AttachmentDto> GetAttachmentById(string userId,string attachmentId)
+        {
+            var attachment = await _messageAttachmentRepo.GetByIdAsync(attachmentId);
+            if( attachment == null)
+                throw new Exception("Attachment not found");
+            if( attachment.UserId != userId)
+                throw new UnauthorizedAccessException("You do not have permission to access the attachment;");
+            return MapToAttachmentDtos(attachment);
         }
         public async Task<ConversationResponseDto> ChangeConversationDetails(string userId,UpdateConversationDto dto)
         {
@@ -326,17 +354,18 @@ namespace BusinessLogic.Services.Implementations
                 Members = members
             };
         }
-        private List<AttachmentDto> MapToAttachmentDtos(List<MessageAttachment> attachments)
+        private AttachmentDto MapToAttachmentDtos(MessageAttachment a)
         {
-            return attachments.Select(
-             a => new AttachmentDto
-             {
-                 BlobUrl = _blobService.GenerateDownloadSasUrl(_azureStorageOptions.ConversationContainer, a.BlobName),
-                 OriginalName = a.OriginalName,
-                 FileType = a.FileType,
-                 Size = a.Size
-             }
-            ).ToList();
+            if( a == null)
+                return null;
+            return new AttachmentDto
+            {
+                BlobUrl = _blobService.GenerateDownloadSasUrl(_azureStorageOptions.ConversationContainer, a.BlobName),
+                OriginalName = a.OriginalName,
+                FileType = a.FileType,
+                Size = a.Size,
+                Deleted = a.Deleted,
+            };
         }
     }
 }

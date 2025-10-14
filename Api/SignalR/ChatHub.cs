@@ -76,7 +76,7 @@ namespace Api.SignalR
                 throw new HubException("Failed to send message");
             }
         }
-        public async Task DeleteMessage(string messageId, string conversationId)
+        public async Task DeleteMessage(string messageId)
         {
             var userId = ClaimsPrincipalExtensions.GetUserId(Context.User);
             if (string.IsNullOrEmpty(userId))
@@ -88,14 +88,15 @@ namespace Api.SignalR
                 {
                     throw new HubException("Failed to delete message");
                 }
-                await Clients.Group(conversationId).SendAsync("DeleteMessage", messageId);
+                var message = await _chatService.GetMessageById(messageId);
+                await Clients.Group(message.ConversationId).SendAsync("DeleteMessage", messageId);
             }
             catch (Exception ex)
             {
                 throw new HubException("Failed to delete message");
             }
         }
-        public async Task DeleteAttachment(string attachmentId, string conversationId)
+        public async Task DeleteAttachment(string attachmentId)
         {
             var userId = ClaimsPrincipalExtensions.GetUserId(Context.User);
             if (string.IsNullOrEmpty(userId))
@@ -107,7 +108,9 @@ namespace Api.SignalR
                 {
                     throw new HubException("Failed to delete attachment");
                 }
-                await Clients.Group(conversationId).SendAsync("DeleteAttachment", attachmentId);
+                var attachment = await _chatService.GetAttachmentById(userId,attachmentId);
+                var message = await _chatService.GetMessageById(attachment.MessageId);
+                await Clients.Group(message.ConversationId).SendAsync("DeleteAttachment", attachmentId);
             }
             catch (Exception ex)
             {
