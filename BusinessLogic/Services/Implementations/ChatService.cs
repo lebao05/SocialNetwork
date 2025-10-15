@@ -51,7 +51,7 @@ namespace BusinessLogic.Services.Implementations
             _azureStorageOptions = azureStorageOption.Value;
             _userManager = userManager;
         }
-        public async Task<MessageResponseDto> SendMessageAsync(string userId, SendMessageDto dto)
+        public async Task<MessageResponseDto> SendMessageAsync(string userId, SendMessageDto dto, bool isSystemMessage = false)
         {
             // Verify user is member of conversation
             var isMember = await _conversationMemberRepo.IsMemberAsync(dto.ConversationId, userId);
@@ -80,7 +80,8 @@ namespace BusinessLogic.Services.Implementations
                 Content = dto.Content,
                 CreatedAt = DateTime.UtcNow,
                 IsEdited = false,
-                Deleted = false
+                Deleted = false,
+                IsSystemMessage = isSystemMessage,
             };
 
             await _messageRepo.AddAsync(message);
@@ -113,6 +114,7 @@ namespace BusinessLogic.Services.Implementations
                 CreatedAt = message.CreatedAt,
                 IsEdited = message.IsEdited,
                 Attachment = MapToAttachmentDtos(attachment),
+                IsSystemMessage = isSystemMessage
             };
         }
 
@@ -216,6 +218,7 @@ namespace BusinessLogic.Services.Implementations
                 CreatedAt = m.CreatedAt,
                 IsEdited = m.IsEdited,
                 Deleted = m.Deleted,
+                IsSystemMessage = m.IsSystemMessage,
                 Attachment = MapToAttachmentDtos(m.MessageAttachment),
             }).Reverse().ToList();
         }
@@ -241,18 +244,6 @@ namespace BusinessLogic.Services.Implementations
         public async Task<List<string>> GetUserConversationIds(string userId)
         {
             return await _conversationMemberRepo.GetUserConversationIdsAsync(userId);
-        }
-        public async Task<bool> LeaveChatGroup(string userId,string conversationId)
-        {
-            var member = await _conversationMemberRepo.GetMemberAsync(conversationId,userId);
-            if (member == null)
-                throw new HttpResponseException(404,"User is not a member of this conversation");
-            if( !member.Conversation.IsGroup)
-                throw new HttpResponseException(400,"Cannot leave a one-on-one conversation");
-            var IsSuccessfull = await _conversationMemberRepo.DeleteAsync(member);
-            if(!IsSuccessfull)
-                throw new HttpResponseException(500,"Failed to leave the group");
-            return true;
         }
         public async Task<bool> DeleteMessage(string userId,string messageId)
         {
@@ -299,6 +290,18 @@ namespace BusinessLogic.Services.Implementations
             conversation.PictureUrl = dto.PictureUrl;
             await _conversationRepo.UpdateAsync(conversation);
             return await MapToConversationDto(conversation,userId);
+        }
+        public async Task<ConversationMemberDto> LeaveChatGroup(string userId,string conversationId)
+        {
+            var member = await _conversationMemberRepo.GetMemberAsync(conversationId,userId);
+            if (member == null)
+                throw new HttpResponseException(404,"User is not a member of this conversation");
+            if( !member.Conversation.IsGroup)
+                throw new HttpResponseException(400,"Cannot leave a one-on-one conversation");
+            var IsSuccessfull = await _conversationMemberRepo.DeleteAsync(member);
+            if(!IsSuccessfull)
+                throw new HttpResponseException(500,"Failed to leave the group");
+            return _mapper.Map<ConversationMemberDto>(member);
         }
         public async Task<ConversationMemberDto> AddToConversation(String userId, AddToConversationDto dto)
         {

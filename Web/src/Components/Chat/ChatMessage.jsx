@@ -139,6 +139,15 @@ const ChatMessages = ({
       onClick={() => closeAllMenus()}
     >
       {messages.map((msg, index) => {
+        if (msg.isSystemMessage) {
+          return (
+            <div key={msg.id || index} className="flex justify-center my-3">
+              <div className="bg-gray-200 text-gray-600 text-xs px-3 py-1 rounded-full font-medium shadow-sm">
+                {msg.content}
+              </div>
+            </div>
+          );
+        }
         const isCurrentUser = msg.senderId === currentUserId;
 
         return (

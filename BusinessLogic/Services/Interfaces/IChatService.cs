@@ -5,14 +5,14 @@ namespace BusinessLogic.Services.Interfaces
 {
     public interface IChatService
     {
-        Task<MessageResponseDto> SendMessageAsync(string userId, SendMessageDto dto);
+        Task<MessageResponseDto> SendMessageAsync(string userId, SendMessageDto dto,bool isSystemMessage = false);
         Task<ConversationResponseDto> CreateConversationAsync(string creatorId, CreateConversationDto dto);
         Task<List<ConversationResponseDto>> GetUserConversationsAsync(string userId);
         Task<List<MessageResponseDto>> GetConversationMessagesAsync(string conversationId, int page = 1, int pageSize = 15);
         Task<bool> IsConversationMember(string conversationId, string userId);
         Task<List<string>> GetUserConversationIds(string userId);
         Task<ConversationResponseDto> GetConversationByIdAsync(string conversationId, string userId);
-        Task<bool> LeaveChatGroup(string userId, string conversationId);
+        Task<ConversationMemberDto> LeaveChatGroup(string userId, string conversationId);
         Task<bool> DeleteMessage(string userId, string messageId);
         Task<ConversationResponseDto> ChangeConversationDetails(string userId, UpdateConversationDto dto);
         Task<ConversationMemberDto> AddToConversation(String userId,AddToConversationDto dto);

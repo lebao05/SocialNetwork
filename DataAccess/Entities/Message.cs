@@ -14,10 +14,10 @@ namespace DataAccess.Entities
         public DateTime? EditedAt { get; set; }
         public bool IsEdited { get; set; }
         public string? ReplyToMessageId { get; set; }
+        public bool IsSystemMessage { get; set; } = false;
         public Message? ReplyToMessage { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public MessageAttachment MessageAttachment { get; set; }
         public ICollection<UserMessage> UserMessages { get; set; } = new List<UserMessage>();
-
     }
 }

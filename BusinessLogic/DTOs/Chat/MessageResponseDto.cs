@@ -10,6 +10,7 @@
         public string Content { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public bool IsEdited { get; set; }
+        public bool IsSystemMessage { get; set; } = false;
         public bool Deleted { get; set; }
         public AttachmentDto Attachment { get; set; }
     }

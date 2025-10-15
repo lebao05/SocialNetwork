@@ -96,27 +96,6 @@ namespace Api.SignalR
                 throw new HubException("Failed to delete message");
             }
         }
-        public async Task DeleteAttachment(string attachmentId)
-        {
-            var userId = ClaimsPrincipalExtensions.GetUserId(Context.User);
-            if (string.IsNullOrEmpty(userId))
-                throw new Exception("Unauthorized");
-            try
-            {
-                var isSuccess = await _chatService.DeleteAttachment(userId, attachmentId);
-                if (!isSuccess)
-                {
-                    throw new HubException("Failed to delete attachment");
-                }
-                var attachment = await _chatService.GetAttachmentById(userId,attachmentId);
-                var message = await _chatService.GetMessageById(attachment.MessageId);
-                await Clients.Group(message.ConversationId).SendAsync("DeleteAttachment", attachmentId);
-            }
-            catch (Exception ex)
-            {
-                throw new HubException("Failed to delete attachment");
-            }
-        }
         public async Task ChangeConvesationDetail(UpdateConversationDto dto)
         {
             var userId = ClaimsPrincipalExtensions.GetUserId(Context.User);
@@ -141,11 +120,17 @@ namespace Api.SignalR
             }
             try
             {
-                var isSuccess = await _chatService.LeaveChatGroup(userId, conversationID);
-                if (!isSuccess)
+                var member = await _chatService.LeaveChatGroup(userId, conversationID);
+                var message = new SendMessageDto
                 {
-                    throw new HubException("Failed to leave group");
-                }
+                    ConversationId = conversationID,
+                    Content = $"A {member.User.FirstName} {member.User.LastName} has left the conversation.",
+                }; 
+                var messageRes = await _chatService.SendMessageAsync(userId, message,true);
+                var connections = await _presenceTracker.GetConnectionsForUser(userId);
+                foreach(var connectionId in connections)
+                    await Groups.RemoveFromGroupAsync(connectionId, conversationID);
+                await Clients.Group(conversationID).SendAsync("ReceiveMessage", messageRes);
                 await Clients.Group(conversationID).SendAsync("LeaveGroup", userId);
             }
             catch(HttpResponseException ex) 
@@ -167,6 +152,16 @@ namespace Api.SignalR
             try
             {
                 var member = await _chatService.AddToConversation(userId, dto);
+                var message = new SendMessageDto
+                {
+                    ConversationId = dto.ConversationId,
+                    Content = $"{member.User.FirstName} {member.User.LastName} has been added to the conversation.",
+                };
+                var messageRes = await _chatService.SendMessageAsync(userId, message,true);
+                var connections = await _presenceTracker.GetConnectionsForUser(member.User.Id);
+                foreach (var connectionId in connections)
+                    await Groups.AddToGroupAsync(connectionId, dto.ConversationId);
+                await Clients.Group(dto.ConversationId).SendAsync("ReceiveMessage", messageRes);
                 await Clients.Group(dto.ConversationId).SendAsync("AddToGroup", member);
             }
             catch(Exception ex)
