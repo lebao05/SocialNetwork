@@ -24,7 +24,7 @@ namespace Api.Configs
             CreateMap<EducationDto, Education>().ReverseMap();
 
             CreateMap<ConversationMember, ConversationMemberDto>().ReverseMap();
-
+            CreateMap<UserMessageDto, UserMessage>().ReverseMap();
 
 
         }

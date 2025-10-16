@@ -70,6 +70,7 @@ const ChatLayout = ({ isNewChat = false }) => {
                 messagesContainerRef={messagesContainerRef}
                 messagesEndRef={messagesEndRef}
                 handleScroll={handleScroll}
+                members={selectedConversation.members}
               />
               <ChatInput
                 messageInput={messageInput}

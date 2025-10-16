@@ -12,6 +12,7 @@ using Microsoft.Identity.Client;
 using Shared.Configs;
 using Shared.Errors;
 using Shared.Services.Interfaces;
+using System.Linq;
 
 namespace BusinessLogic.Services.Implementations
 {
@@ -206,8 +207,8 @@ namespace BusinessLogic.Services.Implementations
         public async Task<List<MessageResponseDto>> GetConversationMessagesAsync(string conversationId, int page = 1, int pageSize = 50)
         {
             var messages = await _messageRepo.GetConversationMessagesAsync(conversationId, page, pageSize);
-            
-            return messages.Select(m => new MessageResponseDto
+
+            var messageDtos = messages.Select(m => new MessageResponseDto
             {
                 Id = m.Id,
                 ConversationId = m.ConversationId,
@@ -220,8 +221,16 @@ namespace BusinessLogic.Services.Implementations
                 Deleted = m.Deleted,
                 IsSystemMessage = m.IsSystemMessage,
                 Attachment = MapToAttachmentDtos(m.MessageAttachment),
-            }).Reverse().ToList();
+                UserMessageDtos = m.UserMessages
+                    .Select(um => _mapper.Map<UserMessageDto>(um))
+                    .ToList()
+            })
+            .Reverse()
+            .ToList();
+
+            return messageDtos;
         }
+
         public async Task<ConversationResponseDto> GetConversationByIdAsync(string conversationId, string userId)
         {
             var conversation = await _conversationRepo.GetConversationWithMembersAsync(conversationId);
@@ -290,6 +299,39 @@ namespace BusinessLogic.Services.Implementations
             conversation.PictureUrl = dto.PictureUrl;
             await _conversationRepo.UpdateAsync(conversation);
             return await MapToConversationDto(conversation,userId);
+        }
+        public async Task<List<UserMessageDto>> MarkMessageAsReaded(string userId, string ConversationId)
+        {
+            var isMember = await _conversationMemberRepo.IsMemberAsync(ConversationId, userId);
+            if (isMember == false)
+                throw new UnauthorizedAccessException("You are not a member of this conversation");
+            var um = await _userMessageRepo.GetUserMessageByConversationId(userId, ConversationId);
+            if (um == null || um.Count == 0) 
+                throw new Exception("You already read all");
+            for (int i = 0; i < um.Count; i++)
+                um[i].ReadAt = DateTime.UtcNow;
+            await _userMessageRepo.UpdateRangeAsnyc(um);
+            return um.Select(u => _mapper.Map<UserMessageDto>(u)).ToList();
+        }
+        public async Task<UserMessageDto> ReactToMessage(string userId, ReactToMessageDto dto)
+        {
+            var message = await _messageRepo.GetByIdAsync(dto.MessageId);
+            if( message == null)
+                throw new Exception("Message not found");
+            var isMember = await _conversationMemberRepo.IsMemberAsync(message.ConversationId, userId);
+            if( !isMember )
+                throw new UnauthorizedAccessException("You are not a member of this conversation");
+            var userMessage = await _userMessageRepo.GetUserMessageAsync(userId,dto.MessageId);
+            
+            if( userMessage == null)
+                throw new Exception("UserMessage not found");
+
+            if (userMessage.Reaction == dto.Reaction)
+                userMessage.Reaction = null;
+            else
+                userMessage.Reaction = dto.Reaction;
+            await _userMessageRepo.UpdateAsync(userMessage);
+            return _mapper.Map<UserMessageDto>(userMessage);
         }
         public async Task<ConversationMemberDto> LeaveChatGroup(string userId,string conversationId)
         {

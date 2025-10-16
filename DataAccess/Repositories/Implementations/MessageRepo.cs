@@ -15,15 +15,21 @@ namespace DataAccess.Repositories.Implementations
 
         public async Task<List<Message>> GetConversationMessagesAsync(string conversationId, int page, int pageSize)
         {
-            return await _context.Messages
+            var messages = await _context.Messages
                 .Include(m => m.Sender)
+                .Include(m => m.MessageAttachment)
                 .Include(m => m.UserMessages)
-                .Include(m=> m.MessageAttachment)
-                .Where(m => m.ConversationId == conversationId)
+                .Where(m => m.ConversationId == conversationId )
                 .OrderByDescending(m => m.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            // optional: keep only read user messages
+            foreach (var msg in messages)
+                msg.UserMessages = msg.UserMessages.Where(um => um.ReadAt != null).ToList();
+
+            return messages;
         }
 
         public async Task<Message?> GetMessageWithDetailsAsync(string messageId)

@@ -7,7 +7,7 @@ namespace DataAccess.Entities
         public Message Message { get; set; } = null!;
         public string UserId { get; set; }
         public AppUser User { get; set; } = null!;
-        public ReactionType? Reaction { get; set; }
+        public string? Reaction { get; set; }
         public DateTime? ReadAt { get; set; }
         public DateTime? DeleteAt { get; set; }
     }

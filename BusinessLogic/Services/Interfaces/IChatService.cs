@@ -19,7 +19,8 @@ namespace BusinessLogic.Services.Interfaces
         Task<MessageResponseDto> GetMessageById(string messageId);
         Task<bool> DeleteAttachment(string userId, string attachmentId);
         Task<AttachmentDto> GetAttachmentById(string userId, string attachmentId);
-
+        Task<List<UserMessageDto>> MarkMessageAsReaded(string userId, string ConversationId);
+        Task<UserMessageDto> ReactToMessage(string userId, ReactToMessageDto dto);
 
     }
 }

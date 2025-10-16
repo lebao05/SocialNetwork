@@ -8,5 +8,7 @@ namespace DataAccess.Repositories.Interfaces
         Task<List<UserMessage>> GetUnreadMessagesAsync(string userId, string conversationId);
         Task MarkAsReadAsync(string userId, string messageId);
         Task BulkCreateAsync(List<UserMessage> userMessages);
+        Task<List<UserMessage>?> GetUserMessageByConversationId(string userId, string conversationId);
+
     }
 }

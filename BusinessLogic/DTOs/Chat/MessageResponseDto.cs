@@ -13,5 +13,6 @@
         public bool IsSystemMessage { get; set; } = false;
         public bool Deleted { get; set; }
         public AttachmentDto Attachment { get; set; }
+        public List<UserMessageDto> UserMessageDtos { get; set; } = new List<UserMessageDto>();
     }
 }

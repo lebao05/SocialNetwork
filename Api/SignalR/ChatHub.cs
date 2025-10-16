@@ -169,6 +169,41 @@ namespace Api.SignalR
                 throw new HubException(ex.Message);
             }
         }
+        public async Task ReactToMessage(ReactToMessageDto dto)
+        {
+            var userId = ClaimsPrincipalExtensions.GetUserId(Context.User);
+            if (string.IsNullOrEmpty(userId))
+                throw new HubException("Unauthorized");
+            try
+            {
+                UserMessageDto res = await _chatService.ReactToMessage(userId, dto);
+                if( res != null )
+                {
+                    var message = await _chatService.GetMessageById(dto.MessageId);
+                    await Clients.Group(message.ConversationId).SendAsync("ReactToMessage", res);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new HubException(ex.Message);
+            }
+        }
+        public async Task MarkMessageAsReaded(string conversationId)
+        {
+            var userId = ClaimsPrincipalExtensions.GetUserId(Context.User);
+            if (string.IsNullOrEmpty(userId))
+                throw new HubException("Unauthorized");
+            try
+            {
+                var res = await _chatService.MarkMessageAsReaded(userId, conversationId);
+                if(res != null && res.Count > 0)
+                    await Clients.Group(conversationId).SendAsync("MarkAsRead", res);
+            }
+            catch (Exception ex)
+            {
+                throw new HubException(ex.Message);
+            }
+        }
         //public async Task ChangeAlias(string conversationId,ConversationMemberDto dto)
         //{
 

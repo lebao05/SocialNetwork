@@ -8,6 +8,7 @@ import {
   fetchMessages,
   uploadFileToSas,
 } from "../Apis/ChatApi";
+import messageSound from "../assets/messageSound.wav";
 import { getFriends } from "../Redux/Slices/FriendSlice";
 
 const ChatContext = createContext();
@@ -18,6 +19,7 @@ const HUB_URL = VITE_SERVER_URL + "hubs/chat";
 
 export const ChatProvider = ({ children }) => {
   const myAuth = useSelector((state) => state.auth.user);
+  const messageAudio = useRef(new Audio(messageSound));
   const currentUserId = myAuth?.id?.toString();
   const friends = useSelector((state) => state.friend.friends);
   const dispatch = useDispatch();
@@ -65,7 +67,16 @@ export const ChatProvider = ({ children }) => {
       connection.stop();
     };
   }, []);
-
+  useEffect(() => {
+    const enableSound = () => {
+      messageAudio.current.play().then(() => {
+        messageAudio.current.pause();
+        messageAudio.current.currentTime = 0;
+        document.removeEventListener("click", enableSound);
+      });
+    };
+    document.addEventListener("click", enableSound);
+  }, []);
   // === Register event handlers (depends on selectedConversation) ===
   useEffect(() => {
     const connection = connectionRef.current;
@@ -94,8 +105,15 @@ export const ChatProvider = ({ children }) => {
     };
 
     // 🟢 Message received
+    // 🟢 Message received
     const handleReceiveMessage = (message) => {
       const currentConv = selectedConversationRef.current;
+
+      // 🔊 Play sound if message is NOT sent by current user
+      if (message.senderId !== currentUserId) {
+        messageAudio.current.currentTime = 0; // rewind
+        messageAudio.current.play().catch(() => {}); // ignore blocked autoplay
+      }
 
       if (message.conversationId === currentConv?.id) {
         setMessages((prev) => [...prev, message]);
@@ -103,10 +121,10 @@ export const ChatProvider = ({ children }) => {
           () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
           100
         );
+        MarkMessageAsReaded(message.conversationId);
       }
 
       setConversations((prev) => {
-        // Find the conversation that got the new message
         const updated = prev.map((conv) =>
           conv.id === message.conversationId
             ? {
@@ -118,7 +136,6 @@ export const ChatProvider = ({ children }) => {
             : conv
         );
 
-        // Move that conversation to the top of the list
         const convToMove = updated.find((c) => c.id === message.conversationId);
         const others = updated.filter((c) => c.id !== message.conversationId);
 
@@ -126,14 +143,84 @@ export const ChatProvider = ({ children }) => {
       });
     };
 
+    const handleReactToMessage = (userMessageDto) => {
+      setMessages((prev) =>
+        prev.map((msg) => {
+          if (msg.id !== userMessageDto.messageId) return msg;
+
+          const existing = msg.userMessageDtos?.find(
+            (um) => um.userId === userMessageDto.userId
+          );
+
+          if (existing) {
+            // ✅ Update existing user's reaction
+            return {
+              ...msg,
+              userMessageDtos: msg.userMessageDtos.map((um) =>
+                um.userId === userMessageDto.userId
+                  ? { ...um, reaction: userMessageDto.reaction }
+                  : um
+              ),
+            };
+          } else {
+            // ✅ Add new entry if missing
+            return {
+              ...msg,
+              userMessageDtos: [
+                ...(msg.userMessageDtos || []),
+                { ...userMessageDto },
+              ],
+            };
+          }
+        })
+      );
+    };
+
+    const handleMarkMessageReaded = (userMessages) => {
+      setMessages((prev) =>
+        prev.map((msg) => {
+          console.log("raw", userMessages);
+          const updated = userMessages.find((um) => um.messageId === msg.id);
+          if (!updated) return msg;
+
+          // Check if the current user already has a record in userMessageDtos
+          const existing = msg.userMessageDtos?.find(
+            (um) => um.userId === currentUserId
+          );
+
+          // If exists → update readAt
+          if (existing) {
+            return {
+              ...msg,
+              userMessageDtos: msg.userMessageDtos.map((um) =>
+                um.userId === currentUserId
+                  ? { ...um, readAt: updated.readAt }
+                  : um
+              ),
+            };
+          }
+
+          // If not exists → add new userMessageDto
+          return {
+            ...msg,
+            userMessageDtos: [...(msg.userMessageDtos || []), updated],
+          };
+        })
+      );
+    };
+
     connection.on("DeleteMessage", handleDeleteMessage);
     connection.on("DeleteAttachment", handleDeleteAttachment);
     connection.on("ReceiveMessage", handleReceiveMessage);
+    connection.on("MarkAsRead", handleMarkMessageReaded);
+    connection.on("ReactToMessage", handleReactToMessage);
 
     return () => {
       connection.off("DeleteMessage", handleDeleteMessage);
       connection.off("DeleteAttachment", handleDeleteAttachment);
       connection.off("ReceiveMessage", handleReceiveMessage);
+      connection.off("MarkAsRead", handleMarkMessageReaded);
+      connection.off("ReactToMessage", handleReactToMessage);
     };
   }, []); // no deps, we use ref instead of state to track selectedConversation
 
@@ -158,6 +245,7 @@ export const ChatProvider = ({ children }) => {
           () => messagesEndRef.current?.scrollIntoView({ behavior: "auto" }),
           100
         );
+        MarkMessageAsReaded(selectedConversation.id);
       })
       .catch((err) => console.error("Failed to fetch messages:", err));
   }, [selectedConversation]);
@@ -193,7 +281,26 @@ export const ChatProvider = ({ children }) => {
       console.error("Failed to delete message:", err);
     }
   };
-
+  const ReactToMessage = async (messageId, reaction) => {
+    try {
+      await connectionRef.current?.invoke("ReactToMessage", {
+        messageId,
+        reaction,
+      });
+    } catch (err) {
+      console.error("Failed to react to message:", err);
+    }
+  };
+  const MarkMessageAsReaded = async (conversationId) => {
+    try {
+      await connectionRef.current?.invoke(
+        "MarkMessageAsReaded",
+        conversationId
+      );
+    } catch (err) {
+      console.error("Failed to mark message as readed:", err);
+    }
+  };
   const deleteAttachment = async (attachmentId) => {
     try {
       await connectionRef.current?.invoke("DeleteAttachment", attachmentId);
@@ -294,6 +401,8 @@ export const ChatProvider = ({ children }) => {
         messagesEndRef,
         friends,
         isConnected,
+        ReactToMessage,
+        MarkMessageAsReaded,
       }}
     >
       {children}

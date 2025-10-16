@@ -57,7 +57,7 @@ export default function Navbar() {
       {/* Right: Messages, Notifications, Avatar */}
       <div className="flex items-center space-x-3">
         <button
-          onClick={() => navigate('/chat')} className="hover:bg-gray-100 cursor-pointer p-2 rounded-full ">
+          onClick={() => navigate('/chat/t')} className="hover:bg-gray-100 cursor-pointer p-2 rounded-full ">
           <MessageSquare className="w-5 h-5 text-gray-700" />
         </button>
         <button className="hover:bg-gray-100 p-2 rounded-full">
