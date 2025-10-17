@@ -179,7 +179,6 @@ export const ChatProvider = ({ children }) => {
     const handleMarkMessageReaded = (userMessages) => {
       setMessages((prev) =>
         prev.map((msg) => {
-          console.log("raw", userMessages);
           const updated = userMessages.find((um) => um.messageId === msg.id);
           if (!updated) return msg;
 
@@ -208,12 +207,96 @@ export const ChatProvider = ({ children }) => {
         })
       );
     };
+    const handleLeaveGroup = (userId) => {
+      setSelectedConversation((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          members: prev.members.filter((m) => m.id !== userId),
+        };
+      });
+    };
 
+    const handleAddToGroup = (member) => {
+      setSelectedConversation((prev) => {
+        if (!prev) return prev;
+        console.log({ ...prev, members: [...prev.members, member] });
+        return { ...prev, members: [...prev.members, member] };
+      });
+    };
+    const handleChangeConversationDetail = (updated) => {
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== updated.conversationId) return c;
+
+          // merge only non-null fields
+          const newData = { ...c };
+          if (updated.name !== null && updated.name !== undefined)
+            newData.name = updated.name;
+          if (updated.pictureUrl !== null && updated.pictureUrl !== undefined)
+            newData.pictureUrl = updated.pictureUrl;
+          if (
+            updated.defaultReaction !== null &&
+            updated.defaultReaction !== undefined
+          )
+            newData.defaultReaction = updated.defaultReaction;
+
+          return newData;
+        })
+      );
+
+      // Update selectedConversation safely
+      setSelectedConversation((prev) => {
+        if (!prev || prev.id !== updated.conversationId) return prev;
+
+        const newData = { ...prev };
+        if (updated.name !== null && updated.name !== undefined)
+          newData.name = updated.name;
+        if (updated.pictureUrl !== null && updated.pictureUrl !== undefined)
+          newData.pictureUrl = updated.pictureUrl;
+        if (
+          updated.defaultReaction !== null &&
+          updated.defaultReaction !== undefined
+        )
+          newData.defaultReaction = updated.defaultReaction;
+
+        return newData;
+      });
+    };
+    const handleChangeAlias = (dto) => {
+      // dto: { conversationId, userId, alias }
+
+      setSelectedConversation((prev) => {
+        if (!prev || prev.id !== dto.conversationId) return prev;
+        return {
+          ...prev,
+          members: prev.members.map((m) =>
+            m.user.id === dto.userId ? { ...m, alias: dto.alias } : m
+          ),
+        };
+      });
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== dto.conversationId) return c;
+          return {
+            ...c,
+            members: c.members.map((m) =>
+              m.user.id === dto.userId ? { ...m, alias: dto.alias } : m
+            ),
+          };
+        })
+      );
+    };
     connection.on("DeleteMessage", handleDeleteMessage);
     connection.on("DeleteAttachment", handleDeleteAttachment);
     connection.on("ReceiveMessage", handleReceiveMessage);
     connection.on("MarkAsRead", handleMarkMessageReaded);
     connection.on("ReactToMessage", handleReactToMessage);
+    connection.on("LeaveGroup", handleLeaveGroup);
+    connection.on("AddToGroup", handleAddToGroup);
+    connection.on("ChangeConversationDetail", handleChangeConversationDetail);
+    connection.on("ChangeAlias", handleChangeAlias);
 
     return () => {
       connection.off("DeleteMessage", handleDeleteMessage);
@@ -221,6 +304,13 @@ export const ChatProvider = ({ children }) => {
       connection.off("ReceiveMessage", handleReceiveMessage);
       connection.off("MarkAsRead", handleMarkMessageReaded);
       connection.off("ReactToMessage", handleReactToMessage);
+      connection.off("LeaveGroup", handleLeaveGroup);
+      connection.off("AddToGroup", handleAddToGroup);
+      connection.off(
+        "ChangeConversationDetail",
+        handleChangeConversationDetail
+      );
+      connection.off("ChangeAlias", handleChangeAlias);
     };
   }, []); // no deps, we use ref instead of state to track selectedConversation
 
@@ -237,7 +327,6 @@ export const ChatProvider = ({ children }) => {
     if (!selectedConversation) return;
     fetchMessages(selectedConversation.id, 1, 20)
       .then((res) => {
-        console.log(res.data);
         setMessages(res.data || []);
         setPage(1);
         setHasMore((res.data || []).length > 0);
@@ -375,6 +464,69 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  // 🟥 Leave conversation
+  const leaveConversation = async (conversationId) => {
+    if (!conversationId) return;
+
+    try {
+      const connection = connectionRef.current;
+      if (!connection) throw new Error("Not connected");
+
+      // Call hub method
+      await connection.invoke("LeaveConversation", conversationId);
+    } catch (err) {
+      console.error("Failed to leave conversation:", err);
+    }
+  };
+
+  // 🟩 Add user to conversation
+  const addToConversation = async (conversationId, userId) => {
+    if (!conversationId || !userId) return;
+    try {
+      const connection = connectionRef.current;
+      if (!connection) throw new Error("Not connected");
+
+      const dto = { ConversationId: conversationId, UserId: userId };
+      await connection.invoke("AddToGroup", dto);
+    } catch (err) {
+      console.error("Failed to add user to conversation:", err);
+    }
+  }; // 🟨 Change conversation details (name, picture, reaction)
+  const changeConversationDetail = async ({
+    conversationId,
+    name,
+    pictureUrl,
+    defaultReaction,
+  }) => {
+    if (!conversationId) return;
+
+    try {
+      const dto = {
+        ConversationId: conversationId,
+        Name: name || null,
+        PictureUrl: pictureUrl || null,
+        DefaultReaction: defaultReaction || null,
+      };
+
+      await connectionRef.current?.invoke("ChangeConversationDetail", dto);
+    } catch (err) {
+      console.error("Failed to change conversation details:", err);
+    }
+  };
+  // 🟦 Change alias for a specific member in a conversation
+  const changeMemberAlias = async (conversationId, userId, alias) => {
+    if (!conversationId || !userId) return;
+    try {
+      const dto = {
+        ConversationId: conversationId,
+        UserId: userId,
+        Alias: alias || null,
+      };
+      await connectionRef.current?.invoke("ChangeAlias", dto);
+    } catch (err) {
+      console.error("Failed to change member alias:", err);
+    }
+  };
   return (
     <ChatContext.Provider
       value={{
@@ -403,6 +555,10 @@ export const ChatProvider = ({ children }) => {
         isConnected,
         ReactToMessage,
         MarkMessageAsReaded,
+        leaveConversation,
+        addToConversation,
+        changeConversationDetail,
+        changeMemberAlias,
       }}
     >
       {children}

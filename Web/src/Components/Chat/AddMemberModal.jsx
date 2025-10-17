@@ -1,40 +1,20 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import anonymous from "../../assets/anonymous.png";
 import { X } from "lucide-react";
 import { useSelector } from "react-redux";
+import { useChat } from "../../Contexts/ChatContext";
 
 const AddMemberModal = ({ currentMembers = [], onClose, onAdd }) => {
-  const [selectedMembers, setSelectedMembers] = useState([]);
-  const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const friends = useSelector((state) => state.friend.friends || []);
-
-  // Toggle member selection
-  const toggleMember = (friend) => {
-    setSelectedMembers((prev) => {
-      if (prev.some((m) => m.id === friend.friend.id)) {
-        return prev.filter((m) => m.id !== friend.friend.id);
-      }
-      return [...prev, friend.friend];
-    });
-    setError("");
-  };
-
-  // Handle add members
-  const handleAdd = async () => {
-    if (selectedMembers.length === 0) {
-      setError("Please select at least one member.");
-      return;
+  const { addToConversation, selectedConversation } = useChat();
+  // Handle adding a single friend
+  const handleAddFriend = async (friendId) => {
+    try {
+      await addToConversation(selectedConversation.id, friendId);
+    } catch (err) {
+      console.error("Failed to add friend:", err);
     }
-
-    const memberIds = selectedMembers.map((f) => f.id);
-    await onAdd(memberIds);
-
-    // Reset and close
-    setSelectedMembers([]);
-    setError("");
-    setSearchTerm("");
-    onClose();
   };
 
   return (
@@ -49,8 +29,6 @@ const AddMemberModal = ({ currentMembers = [], onClose, onAdd }) => {
         </button>
 
         <h3 className="text-lg font-semibold mb-3">Add Members to Group</h3>
-
-        {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
 
         {/* Search input */}
         <input
@@ -74,20 +52,14 @@ const AddMemberModal = ({ currentMembers = [], onClose, onAdd }) => {
                 const isAlreadyAdded = currentMembers.some(
                   (m) => m.user.id === friend.friend.id
                 );
-                const isSelected = selectedMembers.some(
-                  (m) => m.id === friend.friend.id
-                );
 
                 return (
                   <div
                     key={friend.friend.id}
-                    onClick={() => !isAlreadyAdded && toggleMember(friend)}
-                    className={`flex items-center justify-between gap-3 p-2 rounded-md cursor-pointer transition ${
+                    className={`flex items-center justify-between gap-3 p-2 rounded-md transition ${
                       isAlreadyAdded
                         ? "bg-gray-100 cursor-not-allowed opacity-60"
-                        : isSelected
-                        ? "bg-blue-100"
-                        : "hover:bg-gray-50"
+                        : "hover:bg-gray-50 cursor-pointer"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -101,16 +73,18 @@ const AddMemberModal = ({ currentMembers = [], onClose, onAdd }) => {
                       </span>
                     </div>
 
-                    {/* Status label */}
-                    {isAlreadyAdded && (
+                    {/* Add button or Already Added */}
+                    {isAlreadyAdded ? (
                       <span className="text-xs text-green-600 font-semibold">
                         Added
                       </span>
-                    )}
-                    {isSelected && !isAlreadyAdded && (
-                      <span className="text-xs text-blue-600 font-semibold">
-                        Selected
-                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleAddFriend(friend.friend.id)}
+                        className="text-xs text-blue-600 font-semibold px-2 py-1 border border-blue-600 rounded hover:bg-blue-50 transition"
+                      >
+                        Add
+                      </button>
                     )}
                   </div>
                 );
@@ -119,14 +93,6 @@ const AddMemberModal = ({ currentMembers = [], onClose, onAdd }) => {
             <p className="text-gray-400 text-sm p-2">No friends found.</p>
           )}
         </div>
-
-        {/* Add button */}
-        <button
-          onClick={handleAdd}
-          className="bg-blue-600 text-white w-full py-2 rounded-md hover:bg-blue-700 transition-colors"
-        >
-          Add Members
-        </button>
       </div>
     </div>
   );

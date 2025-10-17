@@ -21,6 +21,7 @@ namespace BusinessLogic.Services.Interfaces
         Task<AttachmentDto> GetAttachmentById(string userId, string attachmentId);
         Task<List<UserMessageDto>> MarkMessageAsReaded(string userId, string ConversationId);
         Task<UserMessageDto> ReactToMessage(string userId, ReactToMessageDto dto);
-
+        Task<UpdateConversationDto> UpdateConversationDetails(string userId, UpdateConversationDto dto);
+        Task<bool> ChangeAlias(string userId, ChaneAliasDto dto);
     }
 }

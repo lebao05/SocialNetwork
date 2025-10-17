@@ -1,6 +1,9 @@
 ﻿using Api.Utils;
+using AutoMapper.Execution;
 using BusinessLogic.DTOs.Chat;
 using BusinessLogic.Services.Interfaces;
+using DataAccess.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Shared.Errors;
 using System.Runtime.InteropServices;
@@ -13,7 +16,11 @@ namespace Api.SignalR
         private readonly IChatService _chatService;
         private readonly ILogger<ChatHub> _logger;
         private readonly IPresenceTracker _presenceTracker;
-        public ChatHub(IChatService chatService, ILogger<ChatHub> logger, IPresenceTracker presenceTracker)
+        private readonly UserManager<AppUser> _userManager;
+        public ChatHub(IChatService chatService, 
+            ILogger<ChatHub> logger, 
+            IPresenceTracker presenceTracker,
+            UserManager<AppUser> userManager)
         {
             _chatService = chatService;
             _logger = logger;
@@ -75,7 +82,7 @@ namespace Api.SignalR
             {
                 throw new HubException("Failed to send message");
             }
-        }
+        }   
         public async Task DeleteMessage(string messageId)
         {
             var userId = ClaimsPrincipalExtensions.GetUserId(Context.User);
@@ -204,24 +211,78 @@ namespace Api.SignalR
                 throw new HubException(ex.Message);
             }
         }
-        //public async Task ChangeAlias(string conversationId,ConversationMemberDto dto)
-        //{
-
-        //}
-        //public async Task<ConversationResponseDto> JoinConvervation(string conversationId)
-        //{
-        //    var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        //    if (string.IsNullOrEmpty(userId))
-        //    {
-        //        throw new HubException("Unauthorized");
-        //    }
-        //    var isMember = await _chatService.IsConversationMember(conversationId, userId);
-        //    if (!isMember)
-        //    {
-        //        throw new HubException("You are not a member of this conversation");
-        //    }
-        //    await Groups.AddToGroupAsync(Context.ConnectionId, conversationId);
-        //    _logger.LogInformation($"User {userId} joined group {conversationId}");
-        //}
+        public async Task ChangeAlias(ChaneAliasDto dto)
+        {
+            var userId = ClaimsPrincipalExtensions.GetUserId(Context.User);
+            if (userId == null)
+                throw new HubException("Unauthorized");
+            try
+            {
+                var isSuccess = await _chatService.ChangeAlias(userId,dto);
+                var user = await _userManager.FindByIdAsync(dto.UserId);
+                if( isSuccess )
+                {
+                    var message = new SendMessageDto
+                    {
+                        ConversationId = dto.ConversationId,
+                        Content = $"{user.FirstName} {user.LastName} has changed the conversation name to {dto.Name}.",
+                    };
+                    var messageRes = await _chatService.SendMessageAsync(userId, message, true);
+                    await Clients.Group(dto.ConversationId).SendAsync("ReceiveMessage", messageRes);
+                }
+            }
+            catch(Exception ex)
+            {
+                throw new HubException(ex.Message);
+            }
+        }
+        public async Task ChangeConversationDetail(UpdateConversationDto dto)
+        {
+            var userId = ClaimsPrincipalExtensions.GetUserId(Context.User);
+            if (userId == null)
+                throw new HubException("Unauthorized");
+            try
+            {
+                if (dto.PictureUrl == null && dto.Name == null && dto.DefaultReaction == null)
+                    return;
+                var res = await _chatService.ChangeConversationDetails(userId, dto);
+                var user = await _userManager.FindByIdAsync(userId);
+                await Clients.Group(dto.ConversationId).SendAsync("ChangeConversationDetail", res);
+                if( dto.Name != null )
+                {
+                    var message = new SendMessageDto
+                    {
+                        ConversationId = dto.ConversationId,
+                        Content = $"{user.FirstName} {user.LastName} has changed the conversation name to {dto.Name}.",
+                    };
+                    var messageRes = await _chatService.SendMessageAsync(userId, message, true);
+                    await Clients.Group(dto.ConversationId).SendAsync("ReceiveMessage", messageRes);
+                }
+                if (dto.PictureUrl != null)
+                {
+                    var message = new SendMessageDto
+                    {
+                        ConversationId = dto.ConversationId,
+                        Content = $"{user.FirstName} {user.LastName} has uploaded a new conversation image.",
+                    };
+                    var messageRes = await _chatService.SendMessageAsync(userId, message, true);
+                    await Clients.Group(dto.ConversationId).SendAsync("ReceiveMessage", messageRes);
+                }
+                if (dto.DefaultReaction != null)
+                {
+                    var message = new SendMessageDto
+                    {
+                        ConversationId = dto.ConversationId,
+                        Content = $"{user.FirstName} {user.LastName} has been change conversaion emotion to {DefaultReaction}.",
+                    };
+                    var messageRes = await _chatService.SendMessageAsync(userId, message, true);
+                    await Clients.Group(dto.ConversationId).SendAsync("ReceiveMessage", messageRes);
+                }
+            }
+            catch(Exception ex)
+            {
+                throw new HubException(ex.Message);
+            }
+        }
     }
 }

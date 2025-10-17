@@ -345,30 +345,60 @@ namespace BusinessLogic.Services.Implementations
                 throw new HttpResponseException(500,"Failed to leave the group");
             return _mapper.Map<ConversationMemberDto>(member);
         }
-        public async Task<ConversationMemberDto> AddToConversation(String userId, AddToConversationDto dto)
+
+        public async Task<UpdateConversationDto> UpdateConversationDetails(string userId,UpdateConversationDto dto)
+        {
+            var member = await _conversationMemberRepo.GetMemberAsync(dto.ConversationId, userId);
+            if (member == null)
+                throw new Exception("You are not member of this conversation");
+            var conversation = await _conversationRepo.GetByIdAsync(dto.ConversationId);
+            if( dto.DefaultReaction != null )
+                conversation.DefaultReaction = dto.DefaultReaction;
+            if( dto.PictureUrl != null )
+                conversation.PictureUrl = dto.PictureUrl;
+            if (dto.Name != null)
+                conversation.Name = dto.Name;
+            await _conversationRepo.UpdateAsync(conversation);
+            return dto;
+        }
+        public async Task<ConversationMemberDto> AddToConversation(string userId, AddToConversationDto dto)
         {
             var isMember = await _conversationMemberRepo.IsMemberAsync(dto.ConversationId, userId);
             if( !isMember )
                 throw new Exception("You are not a member of this conversation");
-            var member = await _conversationMemberRepo.GetMemberAsync(dto.ConversationId, userId);
-            var User = await _userManager.FindByIdAsync(userId);
-            if( User == null )
-                throw new Exception("User not found");
+            var member = await _conversationMemberRepo.GetMemberAsync(dto.ConversationId, dto.UserId);
             if (member != null)
                 throw new Exception("This user is already a member of the conversation!");
+            var User = await _userManager.FindByIdAsync(dto.UserId);
+            if( User == null )
+                throw new Exception("User not found");
             var conversation = await _conversationRepo.GetConversationWithMembersAsync(dto.ConversationId);
             if (conversation == null)
                 throw new Exception("Conversation not found");
             var memb = new ConversationMember
             {
                 ConversationId = dto.ConversationId,
-                UserId = userId,
+                UserId = dto.UserId,
                 Role = "Member",
                 JoinedAt = DateTime.UtcNow
             };
             await _conversationMemberRepo.AddAsync(memb);
-            var memberRes = await _conversationMemberRepo.GetMemberAsync(dto.ConversationId, userId);
+            var memberRes = await _conversationMemberRepo.GetMemberAsync(dto.ConversationId, dto.UserId);
             return _mapper.Map<ConversationMemberDto>(memberRes);
+        }
+        public async Task<bool> ChangeAlias(string userId, ChaneAliasDto dto)
+        {
+            var member = await _conversationMemberRepo.GetMemberAsync(dto.ConversationId, userId);
+            if (member == null)
+                throw new Exception("You aren't a member of this conversation");
+            var memberChanged = await _conversationMemberRepo.GetMemberAsync(dto.ConversationId, dto.UserId);
+            if (memberChanged == null)
+                throw new Exception("The User isn't a member of this conversation");
+            if (dto.Alias == null || dto.Alias == string.Empty)
+                throw new Exception("Alias is invalid");
+            memberChanged.Alias = dto.Alias;
+            await _conversationMemberRepo.UpdateAsync(memberChanged);
+            return true;
         }
         private async Task<ConversationResponseDto> MapToConversationDto(Conversation conv, string? currentUserId = null)
         {

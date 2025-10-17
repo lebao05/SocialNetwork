@@ -1,4 +1,5 @@
 ﻿using Api.SignalR;
+using Api.Utils;
 using BusinessLogic.DTOs.Chat;
 using BusinessLogic.Services.Interfaces;
 using DataAccess;
@@ -88,10 +89,13 @@ namespace Api.Controllers
         [HttpGet("conversations")]
         public async Task<ActionResult<List<ConversationResponseDto>>> GetConversations()
         {
-            var userId = GetUserId();
+            // Safely get user ID
+            var userId = ClaimsPrincipalExtensions.GetUserId(User);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new ApiResponse(401, "User is not authenticated"));
+
             var conversations = await _chatService.GetUserConversationsAsync(userId);
             return Ok(new ApiResponse(200, "Successfully", conversations));
-
         }
         [HttpGet("conversations/{conversationId}/messages")]
         public async Task<ActionResult<List<MessageResponseDto>>> GetMessages(

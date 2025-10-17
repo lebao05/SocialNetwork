@@ -11,6 +11,7 @@ namespace DataAccess.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public string CreatorId { get; set; }
         public AppUser Creator { get; set; } = null!;
+        public string DefaultReaction { get; set; } = "👍";
         public ICollection<ConversationMember> Members { get; set; } = new List<ConversationMember>();
         public ICollection<Message> Messages { get; set; } = new List<Message>();
     }

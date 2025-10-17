@@ -13,52 +13,7 @@ import anonymous from "../../assets/anonymous.png";
 import AddMemberModal from "./AddMemberModal";
 import RenameGroupModal from "./RenameGroupModal";
 import ChangeAliasModal from "./ChangeAliasModal";
-const mockConversation = {
-  id: 1,
-  name: "Software engineer",
-  avatarUrl:
-    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
-  isGroup: true,
-  members: [
-    {
-      id: 1,
-      name: "Gia Huy",
-      avatarUrl:
-        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
-      addedBy: "Gia Huy",
-    },
-    {
-      id: 2,
-      name: "Lê Bảo",
-      avatarUrl:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-      addedBy: "Gia Huy",
-    },
-    {
-      id: 3,
-      name: "Ngọc Hiếu",
-      avatarUrl:
-        "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop",
-      addedBy: "Gia Huy",
-    },
-    {
-      id: 4,
-      name: "Phan Nhật Thiện Nhân",
-      avatarUrl:
-        "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop",
-      addedBy: "Gia Huy",
-    },
-    {
-      id: 5,
-      name: "Vũ Phan Anh",
-      avatarUrl:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-      addedBy: "Gia Huy",
-    },
-  ],
-};
-
-const ChatInfoPanel = ({ conversation = mockConversation, onClose }) => {
+const ChatInfoPanel = ({ conversation, onClose }) => {
   const [activeSection, setActiveSection] = useState(null);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showsRenameModal, setShowsRenameModal] = useState(false);
@@ -66,7 +21,6 @@ const ChatInfoPanel = ({ conversation = mockConversation, onClose }) => {
   const toggleSection = (section) => {
     setActiveSection(activeSection === section ? null : section);
   };
-
   return (
     <div className="w-96 bg-white border-l border-gray-200 flex flex-col h-full overflow-hidden">
       {/* Header */}
