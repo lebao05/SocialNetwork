@@ -2,11 +2,16 @@ import React from "react";
 import group from "../../assets/group.png";
 import anonymous from "../../assets/anonymous.png";
 import { useSelector } from "react-redux";
+import { useChat } from "../../Contexts/ChatContext";
 const ConversationItem = ({ conversation, isSelected, onSelect }) => {
   const myAuth = useSelector((state) => state.auth.user);
+  const { onlineUsers } = useChat();
   const otherMember = !conversation.isGroup
     ? conversation.members?.find((m) => m.user.id !== myAuth.id)
     : null;
+  const isSomeoneOnline = conversation.members?.some(
+    (m) => onlineUsers.includes(m.user.id) && m.user.id != myAuth.id
+  );
   const conversationName = conversation.isGroup
     ? conversation.name
     : otherMember
@@ -19,17 +24,22 @@ const ConversationItem = ({ conversation, isSelected, onSelect }) => {
         isSelected ? "bg-gray-200" : ""
       }`}
     >
-      <img
-        src={
-          conversation.pictureUrl
-            ? conversation.pictureUrl
-            : conversation.isGroup
-            ? group
-            : anonymous
-        }
-        alt={conversation.name}
-        className="w-10 h-10 rounded-full mr-3"
-      />
+      <div className="relative">
+        <img
+          src={
+            conversation.pictureUrl
+              ? conversation.pictureUrl
+              : conversation.isGroup
+              ? group
+              : anonymous
+          }
+          alt={conversation.name}
+          className="w-10 h-10 rounded-full mr-3"
+        />
+        {isSomeoneOnline && (
+          <span className="absolute bottom-1 right-1 block w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+        )}
+      </div>
       <div className="flex-1">
         <div className="font-medium">{conversationName}</div>
         <div className="text-xs text-gray-500 truncate">

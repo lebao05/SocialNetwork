@@ -227,7 +227,7 @@ export const ChatProvider = ({ children }) => {
     const handleChangeConversationDetail = (updated) => {
       setConversations((prev) =>
         prev.map((c) => {
-          if (c.id !== updated.conversationId) return c;
+          if (c.id !== updated.conversationId) return { ...c };
 
           // merge only non-null fields
           const newData = { ...c };
@@ -240,15 +240,14 @@ export const ChatProvider = ({ children }) => {
             updated.defaultReaction !== undefined
           )
             newData.defaultReaction = updated.defaultReaction;
-
-          return newData;
+          return { ...newData };
         })
       );
 
       // Update selectedConversation safely
       setSelectedConversation((prev) => {
+        console.log(updated);
         if (!prev || prev.id !== updated.conversationId) return prev;
-
         const newData = { ...prev };
         if (updated.name !== null && updated.name !== undefined)
           newData.name = updated.name;
@@ -259,8 +258,8 @@ export const ChatProvider = ({ children }) => {
           updated.defaultReaction !== undefined
         )
           newData.defaultReaction = updated.defaultReaction;
-
-        return newData;
+        console.log(newData);
+        return { ...newData };
       });
     };
     const handleChangeAlias = (dto) => {
@@ -287,6 +286,19 @@ export const ChatProvider = ({ children }) => {
           };
         })
       );
+    }; // === Online/Offline tracking ===
+    const handleUserIsOnline = (userId) => {
+      setOnlineUsers((prev) => {
+        if (prev.includes(userId)) return prev;
+        return [...prev, userId];
+      });
+    };
+
+    const handleUserIsOffline = (userId) => {
+      setOnlineUsers((prev) => prev.filter((id) => id !== userId));
+    };
+    const handleInitialUsersOnline = (userIds) => {
+      setOnlineUsers(userIds || []);
     };
     connection.on("DeleteMessage", handleDeleteMessage);
     connection.on("DeleteAttachment", handleDeleteAttachment);
@@ -297,6 +309,9 @@ export const ChatProvider = ({ children }) => {
     connection.on("AddToGroup", handleAddToGroup);
     connection.on("ChangeConversationDetail", handleChangeConversationDetail);
     connection.on("ChangeAlias", handleChangeAlias);
+    connection.on("UserIsOnline", handleUserIsOnline);
+    connection.on("UserIsOffline", handleUserIsOffline);
+    connection.on("IntialUsersOnline", handleInitialUsersOnline);
 
     return () => {
       connection.off("DeleteMessage", handleDeleteMessage);
@@ -311,6 +326,9 @@ export const ChatProvider = ({ children }) => {
         handleChangeConversationDetail
       );
       connection.off("ChangeAlias", handleChangeAlias);
+      connection.off("UserIsOnline", handleUserIsOnline);
+      connection.off("UserIsOffline", handleUserIsOffline);
+      connection.off("IntialUsersOnline", handleInitialUsersOnline);
     };
   }, []); // no deps, we use ref instead of state to track selectedConversation
 

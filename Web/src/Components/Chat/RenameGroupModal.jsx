@@ -1,16 +1,30 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
+import { useChat } from "../../Contexts/ChatContext";
 
 const RenameGroupModal = ({ conversation, onClose }) => {
   const [groupName, setGroupName] = useState(conversation?.name || "");
   const [error, setError] = useState("");
-  const handleSave = () => {
+  const { changeConversationDetail } = useChat(); // ✅ get from context
+  const handleSave = async () => {
     if (!groupName.trim()) {
       setError("An empty name isn't allowed!.");
       return;
     }
-    console.log("New group name:", groupName.trim());
-    setError("");
+    try {
+      await changeConversationDetail({
+        conversationId: conversation.id,
+        name: groupName.trim(),
+        pictureUrl: null,
+        defaultReaction: null,
+      });
+
+      setError("");
+      onClose(); // close modal
+    } catch (err) {
+      console.error("Failed to rename group:", err);
+      setError("Failed to change group name. Please try again.");
+    }
   };
 
   return (
@@ -30,7 +44,7 @@ const RenameGroupModal = ({ conversation, onClose }) => {
         </h2>
 
         <p className="text-gray-400 text-sm mb-4 text-center">
-          Everyone in group will see this adjustment after finishing.
+          Everyone in this group will see this update immediately.
         </p>
 
         {/* Input */}
@@ -39,7 +53,7 @@ const RenameGroupModal = ({ conversation, onClose }) => {
             type="text"
             value={groupName}
             onChange={(e) => setGroupName(e.target.value)}
-            placeholder="Your group name"
+            placeholder="Enter a new group name"
             className="w-full bg-[#3a3b3c] border border-transparent focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white placeholder-gray-400 rounded-lg px-3 py-2 outline-none"
             maxLength={500}
           />

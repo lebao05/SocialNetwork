@@ -19,7 +19,7 @@ const Sidebar = ({
   const navigate = useNavigate();
   const filteredConversations = conversations.filter((conv) =>
     (conv.isGroup ? conv.name : conv.members[0]?.name || "")
-      .toLowerCase()
+      ?.toLowerCase()
       .includes(searchQuery.toLowerCase())
   );
 

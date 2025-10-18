@@ -3,6 +3,7 @@ import { Send, Paperclip, Smile, ThumbsUp, Mic, X } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 
 const ChatInput = ({
+  conversation,
   messageInput,
   setMessageInput,
   handleSendMessage,
@@ -39,7 +40,9 @@ const ChatInput = ({
   const handleMicClick = async () => {
     if (!isRecording) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
         mediaRecorderRef.current = new MediaRecorder(stream);
         audioChunksRef.current = [];
 
@@ -48,7 +51,9 @@ const ChatInput = ({
         };
 
         mediaRecorderRef.current.onstop = async () => {
-          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          const audioBlob = new Blob(audioChunksRef.current, {
+            type: "audio/webm",
+          });
           const audioFile = new File([audioBlob], "voice-message.webm", {
             type: "audio/webm",
           });
@@ -77,7 +82,10 @@ const ChatInput = ({
   // Close emoji picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target)
+      ) {
         setShowEmojiPicker(false);
       }
     };
@@ -192,13 +200,7 @@ const ChatInput = ({
             </div>
           )}
         </div>
-
         {/* 👍 Like */}
-        <ThumbsUp
-          className="w-6 h-6 text-gray-500 cursor-pointer hover:text-blue-500 transition-colors"
-          onClick={() => handleSend("👍")}
-        />
-
         {/* 📎 File picker */}
         <div>
           <Paperclip
@@ -213,7 +215,6 @@ const ChatInput = ({
             multiple
           />
         </div>
-
         {/* 😃 Emoji picker */}
         <div className="relative" ref={emojiPickerRef}>
           <Smile
@@ -226,7 +227,6 @@ const ChatInput = ({
             </div>
           )}
         </div>
-
         {/* 💬 Text input */}
         <input
           type="text"
@@ -238,8 +238,13 @@ const ChatInput = ({
             if (e.key === "Enter") handleSend();
           }}
         />
-
-        {/* 📤 Send */}
+        {/* 📤 Send */}{" "}
+        <span
+          onClick={() => handleSend(conversation.defaultReaction || "👍")}
+          className="text-3xl cursor-pointer select-none hover:scale-125 transition-transform duration-150"
+        >
+          {conversation.defaultReaction || "👍"}
+        </span>
         <button
           onClick={() => handleSend()}
           className="ml-2 p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"

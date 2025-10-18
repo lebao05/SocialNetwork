@@ -286,20 +286,6 @@ namespace BusinessLogic.Services.Implementations
                 throw new UnauthorizedAccessException("You do not have permission to access the attachment;");
             return MapToAttachmentDtos(attachment);
         }
-        public async Task<ConversationResponseDto> ChangeConversationDetails(string userId,UpdateConversationDto dto)
-        {
-            var conversation = await _conversationRepo.GetConversationWithMembersAsync(dto.ConversationId);
-            if( conversation == null )
-                throw new Exception("Conversation not found");
-            var member = await _conversationMemberRepo.GetMemberAsync(dto.ConversationId,userId);
-            if( member == null )
-                throw new UnauthorizedAccessException("You are not a member of this conversation");
-            conversation.Name = dto.Name;
-            conversation.IsE2EE = dto.IsE2EE;
-            conversation.PictureUrl = dto.PictureUrl;
-            await _conversationRepo.UpdateAsync(conversation);
-            return await MapToConversationDto(conversation,userId);
-        }
         public async Task<List<UserMessageDto>> MarkMessageAsReaded(string userId, string ConversationId)
         {
             var isMember = await _conversationMemberRepo.IsMemberAsync(ConversationId, userId);
@@ -419,6 +405,7 @@ namespace BusinessLogic.Services.Implementations
                 IsGroup = conv.IsGroup,
                 IsE2EE = conv.IsE2EE,
                 CreatedAt = conv.CreatedAt,
+                DefaultReaction = conv.DefaultReaction,
                 LastMessage = lastMessage != null ? new MessageResponseDto
                 {
                     Id = lastMessage.Id,
@@ -441,6 +428,16 @@ namespace BusinessLogic.Services.Implementations
                 Size = a.Size,
                 Deleted = a.Deleted,
             };
+        }
+
+        public async Task<bool> EnableNotification(string userId, string conversationId)
+        {
+            var member = await _conversationMemberRepo.GetMemberAsync(conversationId, userId);
+            if (member == null)
+                throw new HttpResponseException(401,"You are not a member of this conversation");
+            member.NotificationEnabled = !member.NotificationEnabled;
+            var isSuccess = await _conversationMemberRepo.UpdateAsync(member);
+            return isSuccess;
         }
     }
 }

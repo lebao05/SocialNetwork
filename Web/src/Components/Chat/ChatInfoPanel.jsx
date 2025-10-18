@@ -13,11 +13,13 @@ import anonymous from "../../assets/anonymous.png";
 import AddMemberModal from "./AddMemberModal";
 import RenameGroupModal from "./RenameGroupModal";
 import ChangeAliasModal from "./ChangeAliasModal";
+import ChangeDefaultEmotionModal from "./ChangeDefaultEmotionModal";
 const ChatInfoPanel = ({ conversation, onClose }) => {
   const [activeSection, setActiveSection] = useState(null);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showsRenameModal, setShowsRenameModal] = useState(false);
   const [showChangeAliasModal, setShowChangeAliasModal] = useState(false);
+  const [showEmotionModal, setShowEmotionModal] = useState(false);
   const toggleSection = (section) => {
     setActiveSection(activeSection === section ? null : section);
   };
@@ -83,8 +85,11 @@ const ChatInfoPanel = ({ conversation, onClose }) => {
                 <button className="w-full text-left py-2 hover:bg-gray-50 rounded">
                   💜 Change Theme
                 </button>
-                <button className="w-full text-left py-2 hover:bg-gray-50 rounded">
-                  👍 Change defaul emotion
+                <button
+                  onClick={() => setShowEmotionModal(true)}
+                  className="w-full text-left py-2 hover:bg-gray-50 rounded"
+                >
+                  {conversation.defaultReaction} Change defaul reaction
                 </button>
                 <button
                   onClick={() => {
@@ -216,6 +221,12 @@ const ChatInfoPanel = ({ conversation, onClose }) => {
         <ChangeAliasModal
           members={conversation.members}
           onClose={() => setShowChangeAliasModal(false)}
+        />
+      )}
+      {showEmotionModal && (
+        <ChangeDefaultEmotionModal
+          conversation={conversation}
+          onClose={() => setShowEmotionModal(false)}
         />
       )}
     </div>

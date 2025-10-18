@@ -25,6 +25,7 @@ namespace Api.SignalR
             _chatService = chatService;
             _logger = logger;
             _presenceTracker = presenceTracker;
+            _userManager = userManager;
         }
 
         public override async Task OnConnectedAsync()
@@ -42,6 +43,8 @@ namespace Api.SignalR
                 _logger.LogInformation($"User {userId} connected with ConnectionId: {Context.ConnectionId}");
             }
             bool isOnline = await _presenceTracker.UserConnected(userId, Context.ConnectionId);
+            var userOnlines = await _presenceTracker.GetOnlineUsers();
+            await Clients.Client(Context.ConnectionId).SendAsync("IntialUsersOnline", userOnlines);
             if( isOnline )
             {
                 await Clients.Others.SendAsync("UserIsOnline", userId);
@@ -56,9 +59,9 @@ namespace Api.SignalR
                 _logger.LogInformation($"User {userId} disconnected (ConnectionId: {Context.ConnectionId})");
             }
             bool isOnline = await _presenceTracker.UserDisconnected(userId, Context.ConnectionId);
-            if (isOnline)
+            if (!isOnline)
             {
-                await Clients.Others.SendAsync("UserIsOnline", userId);
+                await Clients.Others.SendAsync("UserIsOffline", userId);
             }
             await base.OnDisconnectedAsync(exception);
         }
@@ -101,21 +104,6 @@ namespace Api.SignalR
             catch (Exception ex)
             {
                 throw new HubException("Failed to delete message");
-            }
-        }
-        public async Task ChangeConvesationDetail(UpdateConversationDto dto)
-        {
-            var userId = ClaimsPrincipalExtensions.GetUserId(Context.User);
-            if(string.IsNullOrEmpty(userId))
-                throw new HubException("Unauthorized");
-            try
-            {
-                var res = await _chatService.ChangeConversationDetails(userId, dto);
-                await Clients.Groups(dto.ConversationId).SendAsync("UpdateConversation", res);
-            }
-            catch(Exception ex)
-            {
-                throw new HubException(ex.Message);
             }
         }
         public async Task LeaveConversation(string conversationID)
@@ -225,7 +213,7 @@ namespace Api.SignalR
                     var message = new SendMessageDto
                     {
                         ConversationId = dto.ConversationId,
-                        Content = $"{user.FirstName} {user.LastName} has changed the conversation name to {dto.Name}.",
+                        Content = $"{user.FirstName} {user.LastName} has changed alias for {user.FirstName} {user.LastName} to {dto.Alias}.",
                     };
                     var messageRes = await _chatService.SendMessageAsync(userId, message, true);
                     await Clients.Group(dto.ConversationId).SendAsync("ReceiveMessage", messageRes);
@@ -245,7 +233,7 @@ namespace Api.SignalR
             {
                 if (dto.PictureUrl == null && dto.Name == null && dto.DefaultReaction == null)
                     return;
-                var res = await _chatService.ChangeConversationDetails(userId, dto);
+                var res = await _chatService.UpdateConversationDetails(userId, dto);
                 var user = await _userManager.FindByIdAsync(userId);
                 await Clients.Group(dto.ConversationId).SendAsync("ChangeConversationDetail", res);
                 if( dto.Name != null )
@@ -273,7 +261,7 @@ namespace Api.SignalR
                     var message = new SendMessageDto
                     {
                         ConversationId = dto.ConversationId,
-                        Content = $"{user.FirstName} {user.LastName} has been change conversaion emotion to {DefaultReaction}.",
+                        Content = $"{user.FirstName} {user.LastName} has been change conversaion emotion to {dto.DefaultReaction}.",
                     };
                     var messageRes = await _chatService.SendMessageAsync(userId, message, true);
                     await Clients.Group(dto.ConversationId).SendAsync("ReceiveMessage", messageRes);

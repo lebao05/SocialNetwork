@@ -1,6 +1,7 @@
 import React from "react";
 import ConversationItem from "./ConversationItem";
 import { useNavigate } from "react-router-dom";
+import { useChat } from "../../Contexts/ChatContext";
 
 const ConversationList = ({ conversations, selectedConversation }) => {
   const navigate = useNavigate();

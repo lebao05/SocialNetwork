@@ -73,6 +73,7 @@ const ChatLayout = ({ isNewChat = false }) => {
                 members={selectedConversation.members}
               />
               <ChatInput
+                conversation={selectedConversation}
                 messageInput={messageInput}
                 setMessageInput={setMessageInput}
                 handleSendMessage={handleSendMessage}
