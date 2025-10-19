@@ -27,8 +27,8 @@ namespace Api.Controllers
         private readonly IBlobService _blobService;
         private readonly IMessageAttachmentRepo _messageAttachmentRepo;
         public ChatController(
-            IChatService chatService, 
-            AppDbContext context, 
+            IChatService chatService,
+            AppDbContext context,
             IOptions<AzureStorageOptions> options,
             IBlobService blobservice,
             IMessageAttachmentRepo messageAttachmentRepo)
@@ -115,16 +115,29 @@ namespace Api.Controllers
                 conversationId, page, pageSize);
             return Ok(new ApiResponse(200, "Successfully", messages));
         }
+        [HttpPut("conversations/member/{conversationId}/")]
+        public async Task<IActionResult> EnableNotification(string conversationId)
+        {
+            var userId = ClaimsPrincipalExtensions.GetUserId(User);
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new HttpResponseException(401, "Unauthorized");
+            }
+            bool isSuccess = await _chatService.EnableNotification(userId, conversationId);
+            if (isSuccess)
+                return Ok(new ApiResponse(200, "Successfully"));
+            throw new HttpResponseException(500, "Something went wrong");
+        }
         [HttpPost("get-sas-upload")]
         public async Task<ActionResult> GetSasUpload([FromBody] AttachmentMetadataDto dto)
         {
-            if( dto.Equals(null) || string.IsNullOrEmpty(dto.OriginalName) 
-                || string.IsNullOrEmpty(dto.FileType) || dto.Size <=0 )
+            if (dto.Equals(null) || string.IsNullOrEmpty(dto.OriginalName)
+                || string.IsNullOrEmpty(dto.FileType) || dto.Size <=0)
             {
                 return BadRequest(new ApiResponse(400, "Invalid attachment metadata", null));
             }
             var userId = GetUserId();
-            if( User == null )
+            if (User == null)
                 return Unauthorized(new ApiResponse(401, "Unauthorized", null));
             var blobname = $"{Guid.NewGuid()}{Path.GetExtension(dto.OriginalName)}";
             var sasUrl = _blobService.GenerateUploadSasUrl(
@@ -141,7 +154,7 @@ namespace Api.Controllers
                 Size = dto.Size,
                 CreatedAt = DateTime.UtcNow
             });
-            return Ok(new ApiResponse(200, "Successfully", new{ sasUrl = sasUrl, blobname = blobname }));
+            return Ok(new ApiResponse(200, "Successfully", new { sasUrl = sasUrl, blobname = blobname }));
         }
 
     }

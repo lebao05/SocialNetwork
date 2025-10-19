@@ -14,7 +14,7 @@ namespace BusinessLogic.Services.Interfaces
         Task<ConversationResponseDto> GetConversationByIdAsync(string conversationId, string userId);
         Task<ConversationMemberDto> LeaveChatGroup(string userId, string conversationId);
         Task<bool> DeleteMessage(string userId, string messageId);
-        Task<ConversationMemberDto> AddToConversation(String userId,AddToConversationDto dto);
+        Task<ConversationMemberDto> AddToConversation(string userId,AddToConversationDto dto);
         Task<MessageResponseDto> GetMessageById(string messageId);
         Task<bool> DeleteAttachment(string userId, string attachmentId);
         Task<AttachmentDto> GetAttachmentById(string userId, string attachmentId);
@@ -22,5 +22,6 @@ namespace BusinessLogic.Services.Interfaces
         Task<UserMessageDto> ReactToMessage(string userId, ReactToMessageDto dto);
         Task<UpdateConversationDto> UpdateConversationDetails(string userId, UpdateConversationDto dto);
         Task<bool> ChangeAlias(string userId, ChaneAliasDto dto);
+        Task<bool> EnableNotification(string userId, string conversationId);
     }
 }

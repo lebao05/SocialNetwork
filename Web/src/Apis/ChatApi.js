@@ -24,6 +24,8 @@ export async function fetchMessages(conversationId, page = 1, pageSize = 10) {
     throw err;
   }
 }
+
+
 export const createConversationApi = async (dto) => {
   try {
     const response = await axios.post(
