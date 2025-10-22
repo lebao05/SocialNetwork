@@ -65,21 +65,6 @@ namespace Api.Controllers
             }
             return Ok(new ApiResponse(200, "Successfully", result));
         }
-        [HttpDelete("conversations/{id}")]
-        public async Task<ActionResult> DeleteConversation(string id)
-        {
-            var conversation = await _context.Conversations.FindAsync(id);
-            if (conversation == null)
-                return NotFound(new ApiResponse(404, "Conversation not found", null));
-
-            // Soft delete
-            conversation.Deleted = true;
-
-            // Save changes
-            await _context.SaveChangesAsync();
-
-            return Ok(new ApiResponse(200, "Successfully deleted", null));
-        }
         [HttpGet("conversations/{id}")]
         public async Task<ActionResult> GetConversation(string id)
         {
@@ -111,7 +96,7 @@ namespace Api.Controllers
                 throw new HttpResponseException(StatusCodes.Status403Forbidden, "You are not a member of this conversation.");
             }
 
-            var messages = await _chatService.GetConversationMessagesAsync(
+            var messages = await _chatService.GetConversationMessagesAsync(userId,
                 conversationId, page, pageSize);
             return Ok(new ApiResponse(200, "Successfully", messages));
         }
@@ -127,6 +112,29 @@ namespace Api.Controllers
             if (isSuccess)
                 return Ok(new ApiResponse(200, "Successfully"));
             throw new HttpResponseException(500, "Something went wrong");
+        }
+        [HttpPost("conversations/block/{userBlockedId}")]
+        public async Task<IActionResult> BlockUser(string userBlockedId)
+        {
+            var userId = ClaimsPrincipalExtensions.GetUserId(User);
+            var res = await _chatService.BlockUser(userId, userBlockedId);
+            return Ok(new ApiResponse(200, "Successfully"));
+        }
+        [HttpDelete("conversations/{conversationId}")]
+        public async Task<IActionResult> DeleteConversation(string conversationId)
+        {
+            var userId = ClaimsPrincipalExtensions.GetUserId(User);
+            var res = await _chatService.DeleteConversation(userId, conversationId);
+            if (!res)
+                throw new HttpResponseException(500, "Failed to delete conversation");
+            return Ok(new ApiResponse(200, "Successfully"));
+        }
+        [HttpGet("conversations/user/{userId}")]
+        public async Task<IActionResult> GetConversationWithUser(string userId)
+        {
+            var myUserId = ClaimsPrincipalExtensions.GetUserId(User);
+            Conversation res = await _chatService.GetConversationBetweenTwoUsers(userId, myUserId);
+            return Ok(new ApiResponse(200, "Successfully" , new { ConversationId = res.Id } ));
         }
         [HttpPost("get-sas-upload")]
         public async Task<ActionResult> GetSasUpload([FromBody] AttachmentMetadataDto dto)
@@ -156,6 +164,5 @@ namespace Api.Controllers
             });
             return Ok(new ApiResponse(200, "Successfully", new { sasUrl = sasUrl, blobname = blobname }));
         }
-
     }
 }

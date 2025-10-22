@@ -14,6 +14,7 @@ import AddMemberModal from "./AddMemberModal";
 import RenameGroupModal from "./RenameGroupModal";
 import ChangeAliasModal from "./ChangeAliasModal";
 import ChangeDefaultEmotionModal from "./ChangeDefaultEmotionModal";
+import { useChat } from "../../Contexts/ChatContext";
 const ChatInfoPanel = ({ conversation, onClose }) => {
   const [activeSection, setActiveSection] = useState(null);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
@@ -23,6 +24,7 @@ const ChatInfoPanel = ({ conversation, onClose }) => {
   const toggleSection = (section) => {
     setActiveSection(activeSection === section ? null : section);
   };
+  const { leaveConversation } = useChat();
   return (
     <div className="w-96 bg-white border-l border-gray-200 flex flex-col h-full overflow-hidden">
       {/* Header */}
@@ -197,7 +199,10 @@ const ChatInfoPanel = ({ conversation, onClose }) => {
 
           {/* Leave Group */}
           {conversation.isGroup && (
-            <div className="p-4">
+            <div
+              className="p-4"
+              onClick={() => leaveConversation(conversation.id)}
+            >
               <button className="w-full py-3 text-red-600 hover:bg-red-50 rounded font-medium">
                 Leave Group
               </button>

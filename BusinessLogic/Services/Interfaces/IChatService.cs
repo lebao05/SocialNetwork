@@ -8,11 +8,10 @@ namespace BusinessLogic.Services.Interfaces
         Task<MessageResponseDto> SendMessageAsync(string userId, SendMessageDto dto,bool isSystemMessage = false);
         Task<ConversationResponseDto> CreateConversationAsync(string creatorId, CreateConversationDto dto);
         Task<List<ConversationResponseDto>> GetUserConversationsAsync(string userId);
-        Task<List<MessageResponseDto>> GetConversationMessagesAsync(string conversationId, int page = 1, int pageSize = 15);
+        Task<List<MessageResponseDto>> GetConversationMessagesAsync(string userId, string conversationId, int page = 1, int pageSize = 15);
         Task<bool> IsConversationMember(string conversationId, string userId);
         Task<List<string>> GetUserConversationIds(string userId);
         Task<ConversationResponseDto> GetConversationByIdAsync(string conversationId, string userId);
-        Task<ConversationMemberDto> LeaveChatGroup(string userId, string conversationId);
         Task<bool> DeleteMessage(string userId, string messageId);
         Task<ConversationMemberDto> AddToConversation(string userId,AddToConversationDto dto);
         Task<MessageResponseDto> GetMessageById(string messageId);
@@ -23,5 +22,9 @@ namespace BusinessLogic.Services.Interfaces
         Task<UpdateConversationDto> UpdateConversationDetails(string userId, UpdateConversationDto dto);
         Task<bool> ChangeAlias(string userId, ChaneAliasDto dto);
         Task<bool> EnableNotification(string userId, string conversationId);
+        Task<MessageBlocking> BlockUser(string userId, string userBlockedId);
+        Task<ConversationMember> LeaveConversation(string userId, string conversationId);
+        Task<bool> DeleteConversation(string userId, string conversationId);
+        Task<Conversation> GetConversationBetweenTwoUsers(string user1, string user2);
     }
 }

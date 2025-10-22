@@ -115,7 +115,7 @@ namespace Api.SignalR
             }
             try
             {
-                var member = await _chatService.LeaveChatGroup(userId, conversationID);
+                var member = await _chatService.LeaveConversation(userId, conversationID);
                 var message = new SendMessageDto
                 {
                     ConversationId = conversationID,

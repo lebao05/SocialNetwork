@@ -23,6 +23,7 @@ namespace BusinessLogic.Services.Implementations
         private readonly IUserMessageRepo _userMessageRepo;
         private readonly IConversationMemberRepo _conversationMemberRepo;
         private readonly IMessageAttachmentRepo _messageAttachmentRepo;
+        private readonly IMessageBlockingRepo _messageBlockingRepo;
         private readonly IMapper _mapper;
         private readonly UserManager<AppUser> _userManager;
         private readonly IBlobService _blobService;
@@ -33,6 +34,7 @@ namespace BusinessLogic.Services.Implementations
             IMessageRepo messageRepo,
             IUserMessageRepo userMessageRepo,
             IConversationMemberRepo conversationMemberRepo,
+            IMessageBlockingRepo messageBlockingRepo,
             AppDbContext context,
             ILogger<ChatService> logger,
             IMessageAttachmentRepo messageAttachmentRepo,
@@ -46,9 +48,10 @@ namespace BusinessLogic.Services.Implementations
             _messageRepo = messageRepo;
             _userMessageRepo = userMessageRepo;
             _conversationMemberRepo = conversationMemberRepo;
+            _messageAttachmentRepo = messageAttachmentRepo;
             _logger = logger;
             _blobService = blobService;
-            _messageAttachmentRepo = messageAttachmentRepo;
+            _messageBlockingRepo = messageBlockingRepo;
             _azureStorageOptions = azureStorageOption.Value;
             _userManager = userManager;
         }
@@ -67,6 +70,9 @@ namespace BusinessLogic.Services.Implementations
             {
                 throw new Exception("Conversation has no members");
             }
+            foreach (var member in members)
+                member.Deleted = false;
+            await _conversationMemberRepo.UpdateRangeAsnyc(members);
             var attachment = await _messageAttachmentRepo.FindOneByBlobName(dto.Attachment);
             if( attachment == null && dto.Content == null)
             {
@@ -175,8 +181,10 @@ namespace BusinessLogic.Services.Implementations
         public async Task<List<ConversationResponseDto>> GetUserConversationsAsync(string userId)
         {
             var conversations = await _conversationRepo.GetUserConversationsAsync(userId);
+            var filtered = conversations.Where(c => c.Members.Any(m => m.UserId == userId
+            && !m.DeletedConversation)).ToList();
             var result = new List<ConversationResponseDto>();
-            foreach (var conv in conversations)
+            foreach (var conv in filtered)
             {
                 result.Add(await MapToConversationDto(conv, userId)); // sequential - safe
             }
@@ -204,11 +212,13 @@ namespace BusinessLogic.Services.Implementations
                 Attachment = MapToAttachmentDtos(message.MessageAttachment),
             };
         }
-        public async Task<List<MessageResponseDto>> GetConversationMessagesAsync(string conversationId, int page = 1, int pageSize = 50)
+        public async Task<List<MessageResponseDto>> GetConversationMessagesAsync(string userId, string conversationId, int page = 1, int pageSize = 50)
         {
             var messages = await _messageRepo.GetConversationMessagesAsync(conversationId, page, pageSize);
-
-            var messageDtos = messages.Select(m => new MessageResponseDto
+            var member = await _conversationMemberRepo.GetMemberAsync(conversationId, userId);
+            if (member == null)
+                throw new HttpResponseException(401, "Unauthorized");
+            var messageDtos = messages.Where(m=>m.CreatedAt > (member.DeletedConversationAt ?? DateTime.MinValue)).Select(m => new MessageResponseDto
             {
                 Id = m.Id,
                 ConversationId = m.ConversationId,
@@ -319,18 +329,6 @@ namespace BusinessLogic.Services.Implementations
             await _userMessageRepo.UpdateAsync(userMessage);
             return _mapper.Map<UserMessageDto>(userMessage);
         }
-        public async Task<ConversationMemberDto> LeaveChatGroup(string userId,string conversationId)
-        {
-            var member = await _conversationMemberRepo.GetMemberAsync(conversationId,userId);
-            if (member == null)
-                throw new HttpResponseException(404,"User is not a member of this conversation");
-            if( !member.Conversation.IsGroup)
-                throw new HttpResponseException(400,"Cannot leave a one-on-one conversation");
-            var IsSuccessfull = await _conversationMemberRepo.DeleteAsync(member);
-            if(!IsSuccessfull)
-                throw new HttpResponseException(500,"Failed to leave the group");
-            return _mapper.Map<ConversationMemberDto>(member);
-        }
 
         public async Task<UpdateConversationDto> UpdateConversationDetails(string userId,UpdateConversationDto dto)
         {
@@ -371,20 +369,6 @@ namespace BusinessLogic.Services.Implementations
             await _conversationMemberRepo.AddAsync(memb);
             var memberRes = await _conversationMemberRepo.GetMemberAsync(dto.ConversationId, dto.UserId);
             return _mapper.Map<ConversationMemberDto>(memberRes);
-        }
-        public async Task<bool> ChangeAlias(string userId, ChaneAliasDto dto)
-        {
-            var member = await _conversationMemberRepo.GetMemberAsync(dto.ConversationId, userId);
-            if (member == null)
-                throw new Exception("You aren't a member of this conversation");
-            var memberChanged = await _conversationMemberRepo.GetMemberAsync(dto.ConversationId, dto.UserId);
-            if (memberChanged == null)
-                throw new Exception("The User isn't a member of this conversation");
-            if (dto.Alias == null || dto.Alias == string.Empty)
-                throw new Exception("Alias is invalid");
-            memberChanged.Alias = dto.Alias;
-            await _conversationMemberRepo.UpdateAsync(memberChanged);
-            return true;
         }
         private async Task<ConversationResponseDto> MapToConversationDto(Conversation conv, string? currentUserId = null)
         {
@@ -429,6 +413,20 @@ namespace BusinessLogic.Services.Implementations
                 Deleted = a.Deleted,
             };
         }
+        public async Task<bool> ChangeAlias(string userId, ChaneAliasDto dto)
+        {
+            var member = await _conversationMemberRepo.GetMemberAsync(dto.ConversationId, userId);
+            if (member == null)
+                throw new Exception("You aren't a member of this conversation");
+            var memberChanged = await _conversationMemberRepo.GetMemberAsync(dto.ConversationId, dto.UserId);
+            if (memberChanged == null)
+                throw new Exception("The User isn't a member of this conversation");
+            if (dto.Alias == null || dto.Alias == string.Empty)
+                throw new Exception("Alias is invalid");
+            memberChanged.Alias = dto.Alias;
+            await _conversationMemberRepo.UpdateAsync(memberChanged);
+            return true;
+        }
 
         public async Task<bool> EnableNotification(string userId, string conversationId)
         {
@@ -438,6 +436,59 @@ namespace BusinessLogic.Services.Implementations
             member.NotificationEnabled = !member.NotificationEnabled;
             var isSuccess = await _conversationMemberRepo.UpdateAsync(member);
             return isSuccess;
+        }
+
+        public async Task<MessageBlocking> BlockUser(string userId, string userBlockedId)
+        {
+            var user1 = await _userManager.FindByIdAsync(userId);
+            if (user1 == null)
+                throw new HttpResponseException(401, "Unauthorized!");
+            var user2 = await _userManager.FindByIdAsync(userBlockedId);
+            if (user2 == null)
+                throw new HttpResponseException(404, "Blookee not exitst");
+            var existing = await _messageBlockingRepo.FindByClause(b => b.UserId == userId && b.UserBlockedId == userBlockedId);
+            if( existing != null && existing.Count > 0)
+            {
+                existing[0].Deleted = true;
+                await _messageBlockingRepo.UpdateAsync(existing[0]);
+                return existing[0];
+            }
+            var blockEntity = new MessageBlocking
+            {
+                UserId = userId,
+                UserBlockedId = userBlockedId,
+            };
+            var res = await _messageBlockingRepo.AddAsync(blockEntity);
+            return res;
+        }
+
+        public async Task<Conversation> GetConversationBetweenTwoUsers(string user1,string user2)
+        {
+            var res = await _conversationRepo.FindOneOnOneConversationAsync(user1, user2);
+            if (res == null)
+                throw new HttpResponseException(404, "Conversation between two users not found!");
+            return res;
+        }
+        public async Task<ConversationMember> LeaveConversation(string userId, string conversationId)
+        {
+            var member = await _conversationMemberRepo.GetMemberAsync(conversationId, userId);
+            if (member == null)
+                throw new Exception("Member not exists");
+            if (!member.Conversation.IsGroup)
+                throw new HttpResponseException(400, "Cannot leave a one-on-one conversation");
+            member.Deleted = true;
+            await _conversationMemberRepo.UpdateAsync(member);
+            return member;
+        }
+        public async Task<bool> DeleteConversation(string userId, string conversationId)
+        {
+            var member = await _conversationMemberRepo.GetMemberAsync(conversationId, userId);
+            if (member == null)
+                throw new Exception("Member not exists");
+            member.DeletedConversation = true;
+            member.DeletedConversationAt = DateTime.UtcNow;
+            var res = await _conversationMemberRepo.UpdateAsync(member);
+            return res;
         }
     }
 }

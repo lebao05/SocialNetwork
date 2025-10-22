@@ -25,7 +25,6 @@ export async function fetchMessages(conversationId, page = 1, pageSize = 10) {
   }
 }
 
-
 export const createConversationApi = async (dto) => {
   try {
     const response = await axios.post(
@@ -55,7 +54,44 @@ export const fetchConversationApi = async (id) => {
     throw err;
   }
 };
-
+export const fetchConversationIdBetweenTwo = async (userId) => {
+  try {
+    const response = await axios.get(`/chat/conversations/user/${userId}`);
+    return response.data;
+  } catch (err) {
+    console.error(
+      "Failed to fetch conversation:",
+      err.response?.data || err.message
+    );
+    throw err;
+  }
+};
+export const deleteConversation = async (conversationId) => {
+  try {
+    const response = await axios.delete(
+      `/chat/conversations/${conversationId}`
+    );
+    return response.data;
+  } catch (err) {
+    console.error(
+      "Failed to fetch conversation:",
+      err.response?.data || err.message
+    );
+    throw err;
+  }
+};
+export const BlockMessageUser = async (userId) => {
+  try {
+    const response = await axios.post(`/chat/conversations/${userId}`);
+    return response.data;
+  } catch (err) {
+    console.error(
+      "Failed to fetch conversation:",
+      err.response?.data || err.message
+    );
+    throw err;
+  }
+};
 export async function uploadFileToSas(file) {
   // 1️⃣ Request SAS URL + blob info from backend
   const res = await axios.post("/chat/get-sas-upload", {

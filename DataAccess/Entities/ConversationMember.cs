@@ -12,6 +12,8 @@ namespace DataAccess.Entities
         public string Role { get; set; } = string.Empty;
         public string? Alias { get; set; }
         public bool NotificationEnabled { get; set; } = true;
+        public bool DeletedConversation { get; set; } = false;
+        public DateTime? DeletedConversationAt { get; set; }
         public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
     }
 }

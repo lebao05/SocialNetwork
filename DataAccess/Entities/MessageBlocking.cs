@@ -1,19 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Helpers;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DataAccess.Entities
 {
-    public class MessageBlocking
+    public class MessageBlocking : BaseEntity,IBaseEntity
     {
-        [Required]
-        public string UserId { get; set; }
+        public string UserId { get; set; } = string.Empty!;
         public AppUser User { get; set; }
-        [Required]
-        public string UserBlockedId { get; set; } = null!;
+        public string UserBlockedId { get; set; } = string.Empty!;
         public AppUser UserBlocker { get; set; }
     }
 }
