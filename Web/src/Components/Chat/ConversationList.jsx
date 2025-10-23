@@ -13,7 +13,13 @@ const ConversationList = ({ conversations, selectedConversation }) => {
             key={conv.id}
             conversation={conv}
             isSelected={selectedConversation?.id === conv.id}
-            onSelect={() => navigate("/chat/t/" + conv.id)}
+            onSelect={() => {
+              if (conv.isVirtual) {
+                navigate("/chat/new/" + conv.members[0].user.id);
+              } else {
+                navigate("/chat/t/" + conv.id);
+              }
+            }}
           />
         );
       })}

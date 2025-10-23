@@ -338,11 +338,15 @@ export const ChatProvider = ({ children }) => {
       .then((res) => setConversations(res.data || []))
       .catch((err) => console.error("Failed to fetch conversations:", err));
     dispatch(getFriends());
-  }, []);
+  }, [myAuth]);
 
   // === Fetch messages on conversation select ===
   useEffect(() => {
     if (!selectedConversation) return;
+    if (selectedConversation.isVirtual) {
+      setMessages([]);
+      return;
+    }
     fetchMessages(selectedConversation.id, 1, 20)
       .then((res) => {
         setMessages(res.data || []);

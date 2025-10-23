@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import ConversationList from "./ConversationList";
 import anonymous from "../../assets/anonymous.png";
 import { Settings, MoreVertical, Plus } from "lucide-react";
-import CreateGroupModal from "./CreateGroupModal"; // import new component
+import CreateGroupModal from "./CreateGroupModal";
 import { createConversationApi } from "../../Apis/ChatApi";
 import { useNavigate } from "react-router-dom";
+
 const Sidebar = ({
   myAuth,
   conversations,
@@ -17,17 +18,53 @@ const Sidebar = ({
 }) => {
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const navigate = useNavigate();
-  const filteredConversations = conversations.filter((conv) =>
-    (conv.isGroup ? conv.name : conv.members[0]?.name || "")
-      ?.toLowerCase()
-      .includes(searchQuery.toLowerCase())
-  );
 
-  const filteredFriends = (friends || []).filter((friend) =>
-    `${friend.friend.firstName || ""} ${friend.friend.lastName || ""}`
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
-  );
+  // ✅ useMemo to avoid recalculating filters on every render
+  const filteredConversations = useMemo(() => {
+    // Create virtual conversations for friends who aren't in any real conversation
+    if( searchQuery == '' ) return conversations;
+    const virtualConvs = (friends || [])
+      .map((f) => {
+        const friendUser = f.friend;
+        if (!friendUser) return null;
+
+        const exists = conversations.some(
+          (conv) =>
+            !conv.isGroup &&
+            conv.members?.some((m) => (m.user?.id || m.id) === friendUser.id)
+        );
+
+        if (exists) return null;
+        return {
+          id: `friend-${friendUser.id}`,
+          isGroup: false,
+          isVirtual: true,
+          pictureUrl: friendUser.avatarUrl || anonymous,
+          name: `${friendUser.firstName || ""} ${
+            friendUser.lastName || ""
+          }`.trim(),
+          members: [{ user: friendUser, role: "Member" }],
+          lastMessage: null,
+          unreadCount: 0,
+        };
+      })
+      .filter(Boolean);
+    // Merge real conversations + virtual friends
+    const mergedConvs = [...conversations, ...virtualConvs];
+
+    // Filter by search query
+    return mergedConvs.filter((conv) =>
+      conv.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [conversations, friends, searchQuery]);
+
+  const filteredFriends = useMemo(() => {
+    return (friends || []).filter((friend) =>
+      `${friend.friend.firstName || ""} ${friend.friend.lastName || ""}`
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase())
+    );
+  }, [friends, searchQuery]);
 
   const handleCreateGroup = async (newGroup) => {
     try {
@@ -37,7 +74,9 @@ const Sidebar = ({
         setSelectedConversation(res.data);
       }
       setShowCreateGroupModal(false);
-    } catch (err) {}
+    } catch (err) {
+      console.error("Error creating group:", err);
+    }
   };
   return (
     <div className="w-1/5 border-r border-gray-200 flex flex-col bg-white">
@@ -83,52 +122,19 @@ const Sidebar = ({
           className="w-full px-3 py-2 rounded-md border text-sm"
         />
       </div>
-      <div></div>
+
       {/* Conversation / Friends list */}
-      {searchQuery ? (
-        <div className="flex-1 overflow-y-auto">
-          <h4 className="px-4 py-2 text-gray-500 text-xs uppercase">Friends</h4>
-          {filteredFriends.map((friend) => (
-            <div
-              key={friend.friend.id}
-              onClick={() => {
-                setSelectedConversation({
-                  id: `friend-${friend.friend.id}`,
-                  isGroup: false,
-                  isVirtual: true,
-                  pictureUrl: friend.friend?.avatarUrl,
-                  name: `${friend.friend.firstName} ${friend.friend.lastName}`,
-                  members: [friend.friend],
-                  lastMessage: null,
-                  unreadCount: 0,
-                });
-              }}
-              className="flex items-center gap-3 p-3 hover:bg-gray-100 cursor-pointer"
-            >
-              <img
-                src={friend.friend.avatarUrl || anonymous}
-                alt="avatar"
-                className="w-10 h-10 rounded-full"
-              />
-              <span className="font-medium">
-                {friend.friend.firstName} {friend.friend.lastName}
-              </span>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <ConversationList
-          conversations={filteredConversations}
-          selectedConversation={selectedConversation}
-          setSelectedConversation={setSelectedConversation}
-          searchQuery={searchQuery}
-        />
-      )}
+      <ConversationList
+        conversations={filteredConversations}
+        selectedConversation={selectedConversation}
+        setSelectedConversation={setSelectedConversation}
+        searchQuery={searchQuery}
+      />
 
       {/* Create Group Modal */}
       {showCreateGroupModal && (
         <CreateGroupModal
-          friends={friends}
+          friends={filteredFriends}
           onClose={() => setShowCreateGroupModal(false)}
           onCreate={handleCreateGroup}
         />

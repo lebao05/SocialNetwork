@@ -381,11 +381,11 @@ namespace BusinessLogic.Services.Implementations
                 User = _mapper.Map<UserDto>(m.User),
                 Role = m.Role,
             }).ToList();
-
+            var otherMember = members.Where( u => u.User.Id != currentUserId  ).FirstOrDefault();
             return new ConversationResponseDto
             {
                 Id = conv.Id,
-                Name = conv.Name,
+                Name = conv.IsGroup ? conv.Name: $"{otherMember.User.FirstName} {otherMember.User.LastName}",
                 IsGroup = conv.IsGroup,
                 IsE2EE = conv.IsE2EE,
                 CreatedAt = conv.CreatedAt,
