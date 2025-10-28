@@ -2,14 +2,18 @@ import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import * as signalR from "@microsoft/signalr";
 import {
+  BlockMessageUser,
   createConversationApi,
+  EnableNotification,
   fetchConversationApi,
   fetchConversations,
   fetchMessages,
+  GetBlockedUsers,
   uploadFileToSas,
 } from "../Apis/ChatApi";
 import messageSound from "../assets/messageSound.wav";
 import { getFriends } from "../Redux/Slices/FriendSlice";
+import { set } from "date-fns";
 
 const ChatContext = createContext();
 export const useChat = () => useContext(ChatContext);
@@ -23,6 +27,7 @@ export const ChatProvider = ({ children }) => {
   const currentUserId = myAuth?.id?.toString();
   const friends = useSelector((state) => state.friend.friends);
   const dispatch = useDispatch();
+  const [blockedUsers, setBlockedUsers] = useState([]);
 
   const messagesContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -37,7 +42,45 @@ export const ChatProvider = ({ children }) => {
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isConnected, setIsConnected] = useState(false);
+  const enableNotification = async (conversationId) => {
+    try {
+      const res = await EnableNotification(conversationId);
+      const Enabled = res.message == "Enabled Successfully";
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === conversationId ? { ...c, notificationEnabled: Enabled } : c
+        )
+      );
+      setSelectedConversation((prev) => ({
+        ...prev,
+        notificationEnabled: Enabled,
+      }));
+    } catch (error) {
+      console.error("Failed to enable notification:", error);
+    }
+  };
 
+  // 🟥 Block or Unblock a user
+  const handleBlockUser = async (userId) => {
+    try {
+      const res = await BlockMessageUser(userId);
+      // Refresh blocked users after action
+      await fetchBlockedUsers();
+      return res;
+    } catch (error) {
+      console.error("Failed to block/unblock user:", error);
+    }
+  };
+
+  // 🟩 Get all blocked users
+  const fetchBlockedUsers = async () => {
+    try {
+      const res = await GetBlockedUsers();
+      setBlockedUsers(res.data || []);
+    } catch (error) {
+      console.error("Failed to get blocked users:", error);
+    }
+  };
   // Track latest selectedConversation to avoid stale closure
   const selectedConversationRef = useRef(null);
   useEffect(() => {
@@ -109,12 +152,10 @@ export const ChatProvider = ({ children }) => {
     const handleReceiveMessage = (message) => {
       const currentConv = selectedConversationRef.current;
 
-      // 🔊 Play sound if message is NOT sent by current user
-      if (message.senderId !== currentUserId) {
+      if (message.senderId != currentUserId) {
         messageAudio.current.currentTime = 0; // rewind
         messageAudio.current.play().catch(() => {}); // ignore blocked autoplay
       }
-
       if (message.conversationId === currentConv?.id) {
         setMessages((prev) => [...prev, message]);
         setTimeout(
@@ -330,14 +371,17 @@ export const ChatProvider = ({ children }) => {
       connection.off("UserIsOffline", handleUserIsOffline);
       connection.off("IntialUsersOnline", handleInitialUsersOnline);
     };
-  }, []); // no deps, we use ref instead of state to track selectedConversation
+  }, [myAuth]); // no deps, we use ref instead of state to track selectedConversation
 
   // === Fetch conversations & friends ===
   useEffect(() => {
-    fetchConversations()
-      .then((res) => setConversations(res.data || []))
-      .catch((err) => console.error("Failed to fetch conversations:", err));
-    dispatch(getFriends());
+    if (myAuth) {
+      fetchBlockedUsers();
+      fetchConversations()
+        .then((res) => setConversations(res.data || []))
+        .catch((err) => console.error("Failed to fetch conversations:", err));
+      dispatch(getFriends());
+    }
   }, [myAuth]);
 
   // === Fetch messages on conversation select ===
@@ -581,6 +625,10 @@ export const ChatProvider = ({ children }) => {
         addToConversation,
         changeConversationDetail,
         changeMemberAlias,
+        blockedUsers,
+        fetchBlockedUsers,
+        handleBlockUser,
+        enableNotification,
       }}
     >
       {children}

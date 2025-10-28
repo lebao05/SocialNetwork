@@ -1,5 +1,6 @@
 ﻿using Api.SignalR;
 using Api.Utils;
+using AutoMapper;
 using BusinessLogic.DTOs.Chat;
 using BusinessLogic.Services.Interfaces;
 using DataAccess;
@@ -8,6 +9,7 @@ using DataAccess.Repositories.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens.Experimental;
 using Shared.Configs;
 using Shared.Errors;
 using Shared.Helpers;
@@ -25,14 +27,17 @@ namespace Api.Controllers
         private readonly AppDbContext _context;
         private readonly AzureStorageOptions _options;
         private readonly IBlobService _blobService;
+        public readonly IMapper _mapper;
         private readonly IMessageAttachmentRepo _messageAttachmentRepo;
         public ChatController(
             IChatService chatService,
             AppDbContext context,
+            IMapper mapper,
             IOptions<AzureStorageOptions> options,
             IBlobService blobservice,
             IMessageAttachmentRepo messageAttachmentRepo)
         {
+            _mapper = mapper;
             _context = context;
             _chatService = chatService;
             _options = options.Value;
@@ -100,7 +105,7 @@ namespace Api.Controllers
                 conversationId, page, pageSize);
             return Ok(new ApiResponse(200, "Successfully", messages));
         }
-        [HttpPut("conversations/member/{conversationId}/")]
+        [HttpPut("notification/{conversationId}/")]
         public async Task<IActionResult> EnableNotification(string conversationId)
         {
             var userId = ClaimsPrincipalExtensions.GetUserId(User);
@@ -108,17 +113,26 @@ namespace Api.Controllers
             {
                 throw new HttpResponseException(401, "Unauthorized");
             }
-            bool isSuccess = await _chatService.EnableNotification(userId, conversationId);
-            if (isSuccess)
-                return Ok(new ApiResponse(200, "Successfully"));
-            throw new HttpResponseException(500, "Something went wrong");
+            var member = await _chatService.EnableNotification(userId, conversationId);
+            return Ok(new ApiResponse(200, $"{(member.NotificationEnabled ? "Enabled" : "Disabled")} Successfully"));
         }
-        [HttpPost("conversations/block/{userBlockedId}")]
+        [HttpPost("block/{userBlockedId}")]
         public async Task<IActionResult> BlockUser(string userBlockedId)
         {
             var userId = ClaimsPrincipalExtensions.GetUserId(User);
             var res = await _chatService.BlockUser(userId, userBlockedId);
-            return Ok(new ApiResponse(200, "Successfully"));
+            var isBlocking = !res.Deleted;
+            return Ok(new ApiResponse(200, $"{(isBlocking ? "Blocked" : "Unblocked")} Successfully"));
+        }
+        [HttpGet("block")]
+        public async Task<IActionResult> GetBlockedUsers()
+        {
+            var userid = ClaimsPrincipalExtensions.GetUserId(User);
+            var blockedUser = await _chatService.GetBlockedUsers(userid);
+            var blockeduserDto = blockedUser.Select(
+                b => b.UserBlockedId
+            );
+            return Ok(new ApiResponse(200, "Get blocked users successfully", blockeduserDto));
         }
         [HttpDelete("conversations/{conversationId}")]
         public async Task<IActionResult> DeleteConversation(string conversationId)

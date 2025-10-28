@@ -4,6 +4,7 @@ using DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251028120550_updb15")]
+    partial class updb15
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -608,34 +611,6 @@ namespace DataAccess.Migrations
                         .HasFilter("[MessageId] IS NOT NULL");
 
                     b.ToTable("MessageAttachments");
-                });
-
-            modelBuilder.Entity("DataAccess.Entities.MessageBlocking", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<bool>("Deleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("UserBlockedId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserBlockerId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserBlockerId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("MessageBlockings");
                 });
 
             modelBuilder.Entity("DataAccess.Entities.Notification", b =>
@@ -1463,23 +1438,6 @@ namespace DataAccess.Migrations
                         .HasForeignKey("DataAccess.Entities.MessageAttachment", "MessageId");
 
                     b.Navigation("Message");
-                });
-
-            modelBuilder.Entity("DataAccess.Entities.MessageBlocking", b =>
-                {
-                    b.HasOne("DataAccess.Entities.AppUser", "UserBlocker")
-                        .WithMany()
-                        .HasForeignKey("UserBlockerId");
-
-                    b.HasOne("DataAccess.Entities.AppUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("User");
-
-                    b.Navigation("UserBlocker");
                 });
 
             modelBuilder.Entity("DataAccess.Entities.Notification", b =>

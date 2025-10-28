@@ -50,7 +50,7 @@ namespace DataAccess
         public DbSet<Conversation> Conversations { get; set; }
         public DbSet<ConversationMember> ConversationMembers { get; set; }
         public DbSet<MessageAttachment> MessageAttachments { get; set; }
-
+        public DbSet<MessageBlocking> MessageBlockings { get; set; }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
        

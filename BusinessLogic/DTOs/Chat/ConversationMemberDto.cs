@@ -7,5 +7,6 @@ namespace BusinessLogic.DTOs.Chat
         public UserDto User { get; set; }
         public string Alias { get; set; } = string.Empty;
         public string Role { get; set; } = "Member";
+
     }
 }

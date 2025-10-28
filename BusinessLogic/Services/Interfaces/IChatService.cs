@@ -21,10 +21,11 @@ namespace BusinessLogic.Services.Interfaces
         Task<UserMessageDto> ReactToMessage(string userId, ReactToMessageDto dto);
         Task<UpdateConversationDto> UpdateConversationDetails(string userId, UpdateConversationDto dto);
         Task<bool> ChangeAlias(string userId, ChaneAliasDto dto);
-        Task<bool> EnableNotification(string userId, string conversationId);
+        Task<ConversationMember> EnableNotification(string userId, string conversationId);
         Task<MessageBlocking> BlockUser(string userId, string userBlockedId);
         Task<ConversationMember> LeaveConversation(string userId, string conversationId);
         Task<bool> DeleteConversation(string userId, string conversationId);
         Task<Conversation> GetConversationBetweenTwoUsers(string user1, string user2);
+        Task<List<MessageBlocking>> GetBlockedUsers(string userId);
     }
 }

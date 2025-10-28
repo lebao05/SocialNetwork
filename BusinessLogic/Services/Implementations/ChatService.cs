@@ -381,6 +381,7 @@ namespace BusinessLogic.Services.Implementations
                 User = _mapper.Map<UserDto>(m.User),
                 Role = m.Role,
             }).ToList();
+            var currentMember = conv.Members.Where( u => u.User.Id == currentUserId  ).FirstOrDefault();
             var otherMember = members.Where( u => u.User.Id != currentUserId  ).FirstOrDefault();
             return new ConversationResponseDto
             {
@@ -390,6 +391,8 @@ namespace BusinessLogic.Services.Implementations
                 IsE2EE = conv.IsE2EE,
                 CreatedAt = conv.CreatedAt,
                 DefaultReaction = conv.DefaultReaction,
+                NotificationEnabled = currentMember != null ? currentMember.NotificationEnabled : false
+                ,
                 LastMessage = lastMessage != null ? new MessageResponseDto
                 {
                     Id = lastMessage.Id,
@@ -428,14 +431,14 @@ namespace BusinessLogic.Services.Implementations
             return true;
         }
 
-        public async Task<bool> EnableNotification(string userId, string conversationId)
+        public async Task<ConversationMember> EnableNotification(string userId, string conversationId)
         {
             var member = await _conversationMemberRepo.GetMemberAsync(conversationId, userId);
             if (member == null)
                 throw new HttpResponseException(401,"You are not a member of this conversation");
             member.NotificationEnabled = !member.NotificationEnabled;
-            var isSuccess = await _conversationMemberRepo.UpdateAsync(member);
-            return isSuccess;
+            await _conversationMemberRepo.UpdateAsync(member);
+            return member;
         }
 
         public async Task<MessageBlocking> BlockUser(string userId, string userBlockedId)
@@ -449,7 +452,7 @@ namespace BusinessLogic.Services.Implementations
             var existing = await _messageBlockingRepo.FindByClause(b => b.UserId == userId && b.UserBlockedId == userBlockedId);
             if( existing != null && existing.Count > 0)
             {
-                existing[0].Deleted = true;
+                existing[0].Deleted = !existing[0].Deleted;
                 await _messageBlockingRepo.UpdateAsync(existing[0]);
                 return existing[0];
             }
@@ -460,6 +463,11 @@ namespace BusinessLogic.Services.Implementations
             };
             var res = await _messageBlockingRepo.AddAsync(blockEntity);
             return res;
+        }
+        public async Task<List<MessageBlocking>> GetBlockedUsers(string userId)
+        {
+            var blocks = await _messageBlockingRepo.FindByClause(b => b.UserId == userId && !b.Deleted);
+            return blocks;
         }
 
         public async Task<Conversation> GetConversationBetweenTwoUsers(string user1,string user2)

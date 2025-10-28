@@ -25,7 +25,7 @@ namespace Api.Configs
 
             CreateMap<ConversationMember, ConversationMemberDto>().ReverseMap();
             CreateMap<UserMessageDto, UserMessage>().ReverseMap();
-
+            CreateMap<MessageBlocking, MessageBlockingDto>().ReverseMap();
 
         }
     }

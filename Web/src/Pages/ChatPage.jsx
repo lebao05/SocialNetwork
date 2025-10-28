@@ -33,7 +33,6 @@ const ChatLayout = ({ isNewChat = false }) => {
     handleSendMessage,
     fetchConversationById,
   } = useChat();
-  console.log(conversations);
   const navigate = useNavigate();
   const [showInfo, setShowInfo] = useState(false);
   useEffect(() => {
@@ -130,6 +129,7 @@ const ChatLayout = ({ isNewChat = false }) => {
                 messageInput={messageInput}
                 setMessageInput={setMessageInput}
                 handleSendMessage={handleSendMessage}
+                members={selectedConversation.members}
               />
             </>
           ) : (

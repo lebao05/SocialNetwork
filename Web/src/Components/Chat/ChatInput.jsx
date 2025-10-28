@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect } from "react";
 import { Send, Paperclip, Smile, X } from "lucide-react";
 import { FaMicrophone, FaCircleStop } from "react-icons/fa6";
 import EmojiPicker from "emoji-picker-react";
+import { useChat } from "../../Contexts/ChatContext";
 
 const ChatInput = ({
   conversation,
+  members,
   messageInput,
   setMessageInput,
   handleSendMessage,
@@ -24,7 +26,16 @@ const ChatInput = ({
   const chunks = useRef([]);
   const timerRef = useRef(null);
   const isCanceled = useRef(false); // flag to skip onstop after cancel
-
+  const { handleBlockUser, blockedUsers } = useChat();
+  const ClickUnblockUser = () => {
+    if (conversation.isGroup) return;
+    handleBlockUser(
+      members.find((m) => blockedUsers.includes(m.user.id)).user.id
+    );
+  };
+  const isBlocking =
+    members?.some((m) => blockedUsers.includes(m.user.id)) &&
+    conversation.isGroup === false;
   // ⏱️ Timer
   useEffect(() => {
     if (isRecording) {
@@ -38,7 +49,6 @@ const ChatInput = ({
     }
     return () => clearInterval(timerRef.current);
   }, [isRecording]);
-
   // 🎙️ Start recording
   const startRecording = async () => {
     setIsRecording(true);
@@ -202,160 +212,184 @@ const ChatInput = ({
   return (
     <div className="p-3 border-t border-gray-200 bg-white flex flex-col gap-2">
       {/* File preview */}
-      {selectedFiles.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto mb-2">
-          {selectedFiles.map((file, index) => (
-            <div
-              key={index}
-              className={`relative cursor-pointer rounded-md border ${
-                selectedFileIndexes.includes(index)
-                  ? "ring-2 ring-blue-500"
-                  : "border-gray-300"
-              }`}
-              onClick={(e) => handleFileClick(index, e)}
+      {isBlocking ? ( // 🧱 Blocked message UI
+        <div className="flex flex-col items-center justify-center text-center text-gray-600 bg-gray-50 rounded-lg p-4">
+          <p className="text-sm font-medium">
+            You’ve blocked messages and calls from this user.
+          </p>
+          <p className="text-xs text-gray-500 mb-3">
+            You won’t be able to message or call each other in this chat.
+          </p>
+
+          <div className="flex flex-col gap-2 w-full max-w-xs">
+            <button
+              className="w-full py-2 rounded-md bg-gray-300 text-sm font-medium text-gray-800 hover:bg-gray-400 transition-colors"
+              onClick={ClickUnblockUser}
             >
-              {file.type.startsWith("image/") ? (
-                <img
-                  src={URL.createObjectURL(file)}
-                  alt={file.name}
-                  className="w-16 h-16 object-cover rounded-md"
-                />
-              ) : (
-                <div className="w-16 h-16 flex items-center justify-center bg-gray-100 text-xs text-gray-700">
-                  {file.name.length > 10
-                    ? file.name.slice(0, 10) + "..."
-                    : file.name}
-                </div>
-              )}
-              <X
-                className="absolute -top-2 -right-2 w-4 h-4 text-red-500 cursor-pointer bg-white rounded-full"
-                onClick={() => removeFile(index)}
-              />
-            </div>
-          ))}
+              Unblock
+            </button>
+          </div>
         </div>
-      )}
+      ) : (
+        <>
+          {selectedFiles.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto mb-2">
+              {selectedFiles.map((file, index) => (
+                <div
+                  key={index}
+                  className={`relative cursor-pointer rounded-md border ${
+                    selectedFileIndexes.includes(index)
+                      ? "ring-2 ring-blue-500"
+                      : "border-gray-300"
+                  }`}
+                  onClick={(e) => handleFileClick(index, e)}
+                >
+                  {file.type.startsWith("image/") ? (
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={file.name}
+                      className="w-16 h-16 object-cover rounded-md"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 flex items-center justify-center bg-gray-100 text-xs text-gray-700">
+                      {file.name.length > 10
+                        ? file.name.slice(0, 10) + "..."
+                        : file.name}
+                    </div>
+                  )}
+                  <X
+                    className="absolute -top-2 -right-2 w-4 h-4 text-red-500 cursor-pointer bg-white rounded-full"
+                    onClick={() => removeFile(index)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
 
-      <div className="p-3 border-t border-gray-200 bg-white flex flex-col gap-2">
-        {/* Voice Recording */}
-        {isRecording ? (
-          <div className="flex items-center justify-between bg-red-100 p-3 rounded-lg gap-2">
-            {/* ❌ Cancel */}
-            <button
-              onClick={cancelRecording}
-              className="p-2 rounded-full bg-gray-300 text-black hover:bg-gray-400"
-            >
-              <X size={18} />
-            </button>
+          <div className="p-3 border-t border-gray-200 bg-white flex flex-col gap-2">
+            {/* Voice Recording */}
+            {isRecording ? (
+              <div className="flex items-center justify-between bg-red-100 p-3 rounded-lg gap-2">
+                {/* ❌ Cancel */}
+                <button
+                  onClick={cancelRecording}
+                  className="p-2 rounded-full bg-gray-300 text-black hover:bg-gray-400"
+                >
+                  <X size={18} />
+                </button>
 
-            <span className="text-red-500 font-semibold flex-1 text-center">
-              {formatTime(recordingTime)}
-            </span>
-
-            <button
-              onClick={stopRecording}
-              className="p-2 rounded-full bg-red-500 text-white hover:bg-red-600"
-            >
-              <FaCircleStop size={20} />
-            </button>
-          </div>
-        ) : recordedURL ? (
-          // Recorded audio preview
-          <div className="flex items-center gap-2">
-            <button
-              onClick={cancelRecording}
-              className="p-2 rounded-full bg-gray-300 text-black hover:bg-gray-400"
-            >
-              <X size={18} />
-            </button>
-            <audio controls src={recordedURL} className="flex-1" />
-            <button
-              onClick={() => handleSendRecordedVoice()}
-              className="ml-2 p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-            >
-              <Send size={18} />
-            </button>
-          </div>
-        ) : (
-          // Normal chat input
-          <div className="flex items-center gap-2">
-            {/* 🎙️ Mic button */}
-            <div className="flex flex-col items-center">
-              <button
-                onMouseDown={startRecording}
-                onMouseUp={stopRecording}
-                onMouseLeave={() => isRecording && stopRecording()}
-                className={`${
-                  isRecording ? "bg-red-500" : "bg-blue-500"
-                } flex items-center justify-center rounded-full p-2 w-[30px] h-[30px] text-white text-xl transition-colors`}
-              >
-                {isRecording ? <FaCircleStop /> : <FaMicrophone />}
-              </button>
-              {isRecording && (
-                <span className="text-xs mt-1 text-red-500">
+                <span className="text-red-500 font-semibold flex-1 text-center">
                   {formatTime(recordingTime)}
                 </span>
-              )}
-            </div>
 
-            {/* 📎 File */}
-            <div>
-              <Paperclip
-                className="w-6 h-6 text-gray-500 cursor-pointer hover:text-blue-500 transition-colors"
-                onClick={() => fileInputRef.current.click()}
-              />
-              <input
-                type="file"
-                className="hidden"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                multiple
-              />
-            </div>
-
-            {/* 😃 Emoji */}
-            <div className="relative" ref={emojiPickerRef}>
-              <Smile
-                className="w-6 h-6 text-gray-500 cursor-pointer hover:text-yellow-500 transition-colors"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              />
-              {showEmojiPicker && (
-                <div className="absolute bottom-10 left-0 z-50">
-                  <EmojiPicker onEmojiClick={onEmojiClick} />
+                <button
+                  onClick={stopRecording}
+                  className="p-2 rounded-full bg-red-500 text-white hover:bg-red-600"
+                >
+                  <FaCircleStop size={20} />
+                </button>
+              </div>
+            ) : recordedURL ? (
+              // Recorded audio preview
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={cancelRecording}
+                  className="p-2 rounded-full bg-gray-300 text-black hover:bg-gray-400"
+                >
+                  <X size={18} />
+                </button>
+                <audio controls src={recordedURL} className="flex-1" />
+                <button
+                  onClick={() => handleSendRecordedVoice()}
+                  className="ml-2 p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                >
+                  <Send size={18} />
+                </button>
+              </div>
+            ) : (
+              // Normal chat input
+              <div className="flex items-center gap-2">
+                {/* 🎙️ Mic button */}
+                <div className="flex flex-col items-center">
+                  <button
+                    onMouseDown={startRecording}
+                    onMouseUp={stopRecording}
+                    onMouseLeave={() => isRecording && stopRecording()}
+                    className={`${
+                      isRecording ? "bg-red-500" : "bg-blue-500"
+                    } flex items-center justify-center rounded-full p-2 w-[30px] h-[30px] text-white text-xl transition-colors`}
+                  >
+                    {isRecording ? <FaCircleStop /> : <FaMicrophone />}
+                  </button>
+                  {isRecording && (
+                    <span className="text-xs mt-1 text-red-500">
+                      {formatTime(recordingTime)}
+                    </span>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* 💬 Text input */}
-            <input
-              type="text"
-              value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
-              placeholder="Type a message..."
-              className="flex-1 px-4 py-2 rounded-full border text-sm focus:outline-none"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSend();
-              }}
-            />
+                {/* 📎 File */}
+                <div>
+                  <Paperclip
+                    className="w-6 h-6 text-gray-500 cursor-pointer hover:text-blue-500 transition-colors"
+                    onClick={() => fileInputRef.current.click()}
+                  />
+                  <input
+                    type="file"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    multiple
+                  />
+                </div>
 
-            {/* 👍 Quick Reaction */}
-            <span
-              onClick={() => handleSend(conversation.defaultReaction || "👍")}
-              className="text-3xl cursor-pointer select-none hover:scale-125 transition-transform duration-150"
-            >
-              {conversation.defaultReaction || "👍"}
-            </span>
+                {/* 😃 Emoji */}
+                <div className="relative" ref={emojiPickerRef}>
+                  <Smile
+                    className="w-6 h-6 text-gray-500 cursor-pointer hover:text-yellow-500 transition-colors"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  />
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-10 left-0 z-50">
+                      <EmojiPicker onEmojiClick={onEmojiClick} />
+                    </div>
+                  )}
+                </div>
 
-            {/* 📤 Send */}
-            <button
-              onClick={() => handleSend()}
-              className="ml-2 p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-            >
-              <Send size={18} />
-            </button>
+                {/* 💬 Text input */}
+                <input
+                  type="text"
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
+                  placeholder="Type a message..."
+                  className="flex-1 px-4 py-2 rounded-full border text-sm focus:outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSend();
+                  }}
+                />
+
+                {/* 👍 Quick Reaction */}
+                <span
+                  onClick={() =>
+                    handleSend(conversation.defaultReaction || "👍")
+                  }
+                  className="text-3xl cursor-pointer select-none hover:scale-125 transition-transform duration-150"
+                >
+                  {conversation.defaultReaction || "👍"}
+                </span>
+
+                {/* 📤 Send */}
+                <button
+                  onClick={() => handleSend()}
+                  className="ml-2 p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                >
+                  <Send size={18} />
+                </button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 };

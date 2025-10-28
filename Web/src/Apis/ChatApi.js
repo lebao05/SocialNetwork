@@ -82,7 +82,7 @@ export const deleteConversation = async (conversationId) => {
 };
 export const BlockMessageUser = async (userId) => {
   try {
-    const response = await axios.post(`/chat/conversations/${userId}`);
+    const response = await axios.post(`/chat/block/${userId}`);
     return response.data;
   } catch (err) {
     console.error(
@@ -91,6 +91,16 @@ export const BlockMessageUser = async (userId) => {
     );
     throw err;
   }
+};
+
+export const GetBlockedUsers = async () => {
+  const response = await axios.get(`/chat/block`);
+  return response.data;
+};
+
+export const EnableNotification = async (conversationId) => {
+  const response = await axios.put(`/chat/notification/${conversationId}`);
+  return response.data;
 };
 export async function uploadFileToSas(file) {
   // 1️⃣ Request SAS URL + blob info from backend

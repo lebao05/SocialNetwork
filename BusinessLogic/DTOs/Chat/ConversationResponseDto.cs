@@ -9,6 +9,7 @@
         public bool IsE2EE { get; set; }
         public string DefaultReaction { get; set; } = string.Empty!;
         public DateTime CreatedAt { get; set; }
+        public bool NotificationEnabled { get; set; } = true;
         public MessageResponseDto? LastMessage { get; set; }
         public List<ConversationMemberDto> Members { get; set; } = new();
     }
