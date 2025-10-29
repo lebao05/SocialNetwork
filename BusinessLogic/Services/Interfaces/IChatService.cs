@@ -27,5 +27,9 @@ namespace BusinessLogic.Services.Interfaces
         Task<bool> DeleteConversation(string userId, string conversationId);
         Task<Conversation> GetConversationBetweenTwoUsers(string user1, string user2);
         Task<List<MessageBlocking>> GetBlockedUsers(string userId);
+        Task<ConversationMember> MarkConversationAsSpam(string userId, string conversationId);
+        Task<ConversationMember> AssginAMemberToAdmin(string userId, string conversationId, string memberId);
+        Task<bool> RemoveAMemberFromConversation(string userId, string conversationId, string memberId);
+
     }
 }

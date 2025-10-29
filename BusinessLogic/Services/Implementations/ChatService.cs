@@ -6,6 +6,7 @@ using DataAccess;
 using DataAccess.Entities;
 using DataAccess.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Client;
@@ -496,6 +497,41 @@ namespace BusinessLogic.Services.Implementations
             member.DeletedConversation = true;
             member.DeletedConversationAt = DateTime.UtcNow;
             var res = await _conversationMemberRepo.UpdateAsync(member);
+            return res;
+        }
+        public async Task<ConversationMember> MarkConversationAsSpam(string userId, string conversationId)
+        {
+            var member = await _conversationMemberRepo.GetMemberAsync(conversationId, userId);
+            if (member == null)
+                throw new HttpResponseException(401, "User is not a member of this conversation");
+            member.IsSpamming = !member.IsSpamming;
+            await _conversationMemberRepo.UpdateAsync(member);
+            return member;
+        }
+        public async Task<ConversationMember> AssginAMemberToAdmin(string userId,string conversationId,string memberId)
+        {
+            var member = await _conversationMemberRepo.GetMemberAsync(conversationId, userId);
+            if (member == null)
+                throw new HttpResponseException(401, "You is not a member of this conversation");
+            if (member.Role != "Admin")
+                throw new HttpResponseException(403, "Only admin can assgin role to members");
+            var memberToBeAdmin = await _conversationMemberRepo.GetMemberAsync(conversationId, memberId);
+            if (memberToBeAdmin == null)
+                throw new HttpResponseException(404, "Member not found");
+            memberToBeAdmin.Role = "Admin";
+            return memberToBeAdmin;
+        }
+        public async Task<bool> RemoveAMemberFromConversation(string userId,string conversationId,string memberId)
+        {
+            var member = await _conversationMemberRepo.GetMemberAsync(conversationId, userId);
+            if (member == null)
+                throw new HttpResponseException("401", "You is not a member of this conversation");
+            if (member.Role != "Admin")
+                throw new HttpResponseException("401", "You is not admin of this conversation");
+            var memberToBeRemoved = await _conversationMemberRepo.GetMemberAsync(conversationId, memberId);
+            if (memberToBeRemoved == null)
+                throw new HttpResponseException("404", "This user isn't a member of this conversation");
+            var res = await _conversationMemberRepo.DeleteAsync(memberToBeRemoved);
             return res;
         }
     }
