@@ -30,6 +30,6 @@ namespace BusinessLogic.Services.Interfaces
         Task<ConversationMember> MarkConversationAsSpam(string userId, string conversationId);
         Task<ConversationMember> AssginAMemberToAdmin(string userId, string conversationId, string memberId);
         Task<bool> RemoveAMemberFromConversation(string userId, string conversationId, string memberId);
-
+        Task<List<MessageResponseDto>?> SearchMessagesByText(string userId, string conversationId, string searchQuery);
     }
 }

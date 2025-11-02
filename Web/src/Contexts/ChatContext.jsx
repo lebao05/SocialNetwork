@@ -13,7 +13,6 @@ import {
 } from "../Apis/ChatApi";
 import messageSound from "../assets/messageSound.wav";
 import { getFriends } from "../Redux/Slices/FriendSlice";
-import { set } from "date-fns";
 
 const ChatContext = createContext();
 export const useChat = () => useContext(ChatContext);
@@ -147,8 +146,6 @@ export const ChatProvider = ({ children }) => {
       );
     };
 
-    // 🟢 Message received
-    // 🟢 Message received
     const handleReceiveMessage = (message) => {
       const currentConv = selectedConversationRef.current;
 

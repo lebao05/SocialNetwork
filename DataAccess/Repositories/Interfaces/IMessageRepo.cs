@@ -5,6 +5,8 @@ namespace DataAccess.Repositories.Interfaces
     {
         Task<List<Message>> GetConversationMessagesAsync(string conversationId, int page, int pageSize);
         Task<Message?> GetMessageWithDetailsAsync(string messageId);
+        Task<List<Message>> SearchMessagesByText(string conversationId, string query);
+
         Task<int> GetUnreadCountAsync(string conversationId, string userId);
         Task<Message?> GetLastMessageAsync(string conversationId);
     }

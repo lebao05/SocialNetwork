@@ -37,10 +37,23 @@ namespace DataAccess.Repositories.Implementations
             return await _context.Messages
                 .Include(m => m.Sender)
                 .Include(m => m.UserMessages)
+                .Include(m => m.MessageAttachment)
                 .Include(m => m.Conversation)
                 .FirstOrDefaultAsync(m => m.Id == messageId);
         }
 
+        public async Task<List<Message>> SearchMessagesByText(string conversationId, string query)
+        {
+            return await _context.Messages
+                .Include(m => m.Sender)
+                .Include(m => m.UserMessages)
+                .Include(m => m.MessageAttachment)
+                .Include(m => m.Conversation)
+                .Where(m => m.ConversationId == conversationId &&
+                    EF.Functions.Collate(m.Content, "Vietnamese_CI_AI").Contains(query))
+                .OrderBy(m => m.CreatedAt)
+                .ToListAsync();
+        }
         public async Task<int> GetUnreadCountAsync(string conversationId, string userId)
         {
             return await _context.UserMessages

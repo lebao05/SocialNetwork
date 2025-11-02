@@ -178,5 +178,12 @@ namespace Api.Controllers
             });
             return Ok(new ApiResponse(200, "Successfully", new { sasUrl = sasUrl, blobname = blobname }));
         }
+        [HttpGet("conversations/{conversationId}/search/")]
+        public async Task<IActionResult> SeachMessagesByText(string conversationId,[FromQuery] string query)
+        {
+            var userId = ClaimsPrincipalExtensions.GetUserId(User);
+            var messages = await _chatService.SearchMessagesByText(userId, conversationId, query);
+            return Ok(new ApiResponse(200, "Successfully", messages));
+        }
     }
 }

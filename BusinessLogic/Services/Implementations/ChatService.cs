@@ -525,14 +525,36 @@ namespace BusinessLogic.Services.Implementations
         {
             var member = await _conversationMemberRepo.GetMemberAsync(conversationId, userId);
             if (member == null)
-                throw new HttpResponseException("401", "You is not a member of this conversation");
+                throw new HttpResponseException(401, "You is not a member of this conversation");
             if (member.Role != "Admin")
-                throw new HttpResponseException("401", "You is not admin of this conversation");
+                throw new HttpResponseException(401, "You is not admin of this conversation");
             var memberToBeRemoved = await _conversationMemberRepo.GetMemberAsync(conversationId, memberId);
             if (memberToBeRemoved == null)
-                throw new HttpResponseException("404", "This user isn't a member of this conversation");
+                throw new HttpResponseException(404, "This user isn't a member of this conversation");
             var res = await _conversationMemberRepo.DeleteAsync(memberToBeRemoved);
             return res;
+        }
+        public async Task<List<MessageResponseDto>?> SearchMessagesByText(string userId,string conversationId,string searchQuery)
+        {
+            var member = await _conversationMemberRepo.GetMemberAsync(conversationId, userId);
+            if (member == null)
+                throw new HttpResponseException(401, "You is not a member of this conversation!");
+            var messages = await _messageRepo.SearchMessagesByText(conversationId, searchQuery);
+            var dtos = messages.Select(m => new MessageResponseDto
+            {
+                Id = m.Id,
+                ConversationId = m.ConversationId,
+                SenderId = m.SenderId,
+                SenderName = $"{m.Sender.FirstName} {m.Sender.LastName}",
+                SenderAvatar = m.Sender.AvatarUrl,
+                Content = m.Content,
+                CreatedAt = m.CreatedAt,
+                IsEdited = m.IsEdited,
+                Deleted = m.Deleted,
+                IsSystemMessage = m.IsSystemMessage,
+                Attachment = MapToAttachmentDtos(m.MessageAttachment),
+            }).ToList();
+            return dtos;
         }
     }
 }
